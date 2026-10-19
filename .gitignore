@@ -1,6 +1,34 @@
+node_modules
+
+# Output
+.output
+.vercel
+.netlify
+.wrangler
+/.svelte-kit
+/build
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
 .vscode/
 
-bin/
-
-*.log
+# Env
+.env
+.env.*
+!.env.example
+!.env.test
+!.env.production
 *.secret
+
+# Logs
+*.log
+
+# Vite
+vite.config.js.timestamp-*
+vite.config.ts.timestamp-*
+
+# Legacy
+bin/
