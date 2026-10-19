@@ -133,7 +133,7 @@
 	.nav-links {
 		display: flex;
 		align-items: center;
-		gap: 2px;
+		gap: 8px;
 	}
 
 	.nav-link {
