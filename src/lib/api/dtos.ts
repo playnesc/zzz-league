@@ -100,6 +100,31 @@ export interface TournamentMatchDto {
 	p2ApprovedResult: boolean;
 	techLossPlayerId: string | null;
 	techLossTeamId: string | null;
+	nexusResultId: string | null;
+	nexusTotalGames: number | null;
+	nexusCountedGames: number | null;
+	nexusMissing: NexusMissingDto[] | null;
+}
+
+// side is "p1"/"p2" once the Nexus side mapping is known, otherwise "left"/"right".
+export interface NexusMissingDto {
+	game: number;
+	side: 'p1' | 'p2' | 'left' | 'right';
+}
+
+export interface NexusPreviewDto {
+	nexusResultId: string;
+	leftName: string;
+	rightName: string;
+	p1IsLeft: boolean | null;
+	leftTotal: string | null;
+	rightTotal: string | null;
+	resultP1: string | null;
+	resultP2: string | null;
+	totalGames: number;
+	countedGames: number;
+	isTie: boolean;
+	missing: NexusMissingDto[];
 }
 
 export interface PlayerRegistrationDetailsDto {

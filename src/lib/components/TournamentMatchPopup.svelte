@@ -1,5 +1,8 @@
 <script lang="ts">
-	import { adminSetMatchResult, approveResult } from "$lib/backend";
+	import type { NexusMissingDto, NexusPreviewDto } from "$lib/api/dtos";
+	import { adminSetMatchResult, approveResult, previewNexusResult, type NexusSide } from "$lib/backend";
+	import { ApiError } from "$lib/api";
+	import NexusResultEmbed from "$lib/components/NexusResultEmbed.svelte";
 	import { _ } from "$lib/i18n";
 	import { useObjectUrlPreview } from "$lib/imagePreview.svelte.js";
 	import { currentUser, isAdmin, isModerator } from "$lib/store";
@@ -54,12 +57,126 @@
 	let matchResultP1 = $state(match.resultP1 ?? "00:00");
 	let matchResultP2 = $state(match.resultP2 ?? "00:00");
 
+	// Solo matches take their result from a nexus-shiyu.com result link — players must paste one,
+	// moderators may (it prefills their editable fields). Team matches keep typed result + screenshot.
+	const NEXUS_LINK_PATTERN =
+		/^https?:\/\/(www\.)?nexus-shiyu\.com\/results\/[a-z0-9]{10,40}(\/obs)?\/?([?#].*)?$/i;
+
+	type NexusDraft = {
+		url: string;
+		// Which Nexus side is P1 — only set when the names on Nexus couldn't be matched to the players.
+		p1Side: NexusSide | null;
+		preview: NexusPreviewDto | null;
+		error: string | null;
+		loading: boolean;
+	};
+
+	const emptyNexusDraft = (): NexusDraft => ({ url: "", p1Side: null, preview: null, error: null, loading: false });
+	let ownNexus = $state<NexusDraft>(emptyNexusDraft());
+	let adminNexus = $state<NexusDraft>(emptyNexusDraft());
+
 	$effect(() => {
 		match;
 		matchResultP1 = match.resultP1 ?? defaultResult;
 		matchResultP2 = match.resultP2 ?? defaultResult;
 		inputScreenshot = null;
+		ownNexus = emptyNexusDraft();
+		adminNexus = emptyNexusDraft();
 	});
+
+	// 502 = Nexus answered in a shape the API can't parse (Nexus changes often) — the API logs the
+	// raw response, and users are asked to report it. 503 = Nexus is down. Everything else is the
+	// API's own message (bad link, wrong game mode, unfinished result, …).
+	function nexusErrorMessage(error: unknown) {
+		if (error instanceof ApiError && error.status === 502) return $_("tournamentMatchPopup.nexusParseFailed");
+		if (error instanceof ApiError && error.status === 503) return $_("tournamentMatchPopup.nexusUnavailable");
+		return error instanceof Error ? error.message : String(error);
+	}
+
+	function isNexusFormatError(error: unknown) {
+		return error instanceof ApiError && error.status === 502;
+	}
+
+	// Guards against an older, slower preview response overwriting a newer one while typing.
+	const previewRequestIds = { own: 0, admin: 0 };
+
+	async function loadNexusPreview(target: "own" | "admin") {
+		const draft = target === "own" ? ownNexus : adminNexus;
+		const url = draft.url.trim();
+		draft.preview = null;
+		draft.error = null;
+		draft.loading = false;
+		if (!url) return;
+		if (!NEXUS_LINK_PATTERN.test(url)) {
+			draft.error = $_("tournamentMatchPopup.nexusLinkInvalid");
+			return;
+		}
+
+		const requestId = ++previewRequestIds[target];
+		draft.loading = true;
+		try {
+			const preview = await previewNexusResult(tournament.id, match.id, url, draft.p1Side);
+			if (requestId !== previewRequestIds[target]) return;
+			draft.preview = preview;
+			if (target === "admin" && preview.resultP1 && preview.resultP2) {
+				matchResultP1 = preview.resultP1;
+				matchResultP2 = preview.resultP2;
+			}
+		} catch (error) {
+			if (requestId === previewRequestIds[target]) {
+				draft.error = nexusErrorMessage(error);
+				if (isNexusFormatError(error)) alert(draft.error);
+			}
+		} finally {
+			if (requestId === previewRequestIds[target]) draft.loading = false;
+		}
+	}
+
+	function handleNexusUrlInput(target: "own" | "admin", value: string) {
+		const draft = target === "own" ? ownNexus : adminNexus;
+		draft.url = value;
+		draft.p1Side = null;
+		loadNexusPreview(target);
+	}
+
+	// Players pick their own side ("I'm X"); moderators pick which side P1 is.
+	let iAmP1 = $derived($currentUser?.uid === match.p1);
+
+	function pickNexusSide(target: "own" | "admin", side: NexusSide) {
+		const draft = target === "own" ? ownNexus : adminNexus;
+		draft.p1Side = target === "admin" || iAmP1 ? side : side === "left" ? "right" : "left";
+		loadNexusPreview(target);
+	}
+
+	// "Couldn't read 2 results (game 2: A, B). Only 1 of 2 games are counted." — side is p1/p2 once
+	// the mapping is known, left/right (named via the Nexus names) before that.
+	function nexusWarning(
+		missing: NexusMissingDto[] | null | undefined,
+		counted: number | null | undefined,
+		total: number | null | undefined,
+		leftName?: string,
+		rightName?: string,
+	) {
+		if (!missing?.length) return null;
+		const nameOf = (side: NexusMissingDto["side"]) =>
+			side === "p1"
+				? getPlayerName(match.p1)
+				: side === "p2"
+					? getPlayerName(match.p2)
+					: side === "left"
+						? leftName
+						: rightName;
+		const byGame = new Map<number, string[]>();
+		for (const value of missing) {
+			byGame.set(value.game, [...(byGame.get(value.game) ?? []), nameOf(value.side) ?? value.side]);
+		}
+		const details = [...byGame]
+			.map(([game, names]) => `${$_("tournamentMatchPopup.nexusGameLabel", { values: { game } })}: ${names.join(", ")}`)
+			.join("; ");
+		return $_("tournamentMatchPopup.nexusPartialWarning", {
+			values: { count: missing.length, details, counted: counted ?? 0, total: total ?? 0 },
+		});
+	}
 
 	let inputScreenshotPreview = useObjectUrlPreview(() => inputScreenshot?.[0]);
 	let adminScreenshotPreview = useObjectUrlPreview(
@@ -86,7 +203,9 @@
 		matchResultP1 !== (match.resultP1 ?? defaultResult) ||
 			matchResultP2 !== (match.resultP2 ?? defaultResult) ||
 			!!inputScreenshot?.length ||
-			!!adminInputScreenshot?.length,
+			!!adminInputScreenshot?.length ||
+			!!ownNexus.url.trim() ||
+			!!adminNexus.url.trim(),
 	);
 
 	function handleClose() {
@@ -116,6 +235,8 @@
 
 	$effect(() => {
 		function onPaste(e: ClipboardEvent) {
+			// Screenshots are only still accepted for team matches.
+			if (!isTeamMatch) return;
 			const file = imageFileFromPasteEvent(e);
 			if (!file) return;
 
@@ -165,6 +286,10 @@
 	let isApproving = $state(false);
 	async function handleApproveResult() {
 		if (isApproving) return;
+		if (!isTeamMatch) {
+			await handleApproveNexusResult();
+			return;
+		}
 		if (!isValidResult(matchResultP1) || !isValidResult(matchResultP2)) {
 			alert(isDeadlyAssault ? $_("tournamentMatchPopup.enterScoreAboveZero") : $_("tournamentMatchPopup.enterTimeAboveZero"));
 			return;
@@ -194,6 +319,41 @@
 		}
 	}
 
+	// Solo: submit the pasted link, or — with no new link — just confirm the result already stored.
+	async function handleApproveNexusResult() {
+		const url = ownNexus.url.trim();
+		if (url) {
+			const preview = ownNexus.preview;
+			if (!preview) {
+				alert(ownNexus.error ?? $_("tournamentMatchPopup.nexusLoading"));
+				return;
+			}
+			if (preview.p1IsLeft === null) {
+				alert($_("tournamentMatchPopup.nexusPickSideRequired"));
+				return;
+			}
+			if (preview.countedGames === 0) {
+				alert($_("tournamentMatchPopup.nexusNoFinishedGame"));
+				return;
+			}
+			if (preview.isTie) {
+				alert($_("tournamentMatchPopup.nexusTie"));
+				return;
+			}
+		} else if (!match.nexusResultId) {
+			alert($_("tournamentMatchPopup.nexusLinkRequired"));
+			return;
+		}
+		try {
+			isApproving = true;
+			await approveResult(tournament.id, match.id, null, null, null, url || null, url ? ownNexus.p1Side : null);
+		} catch (error) {
+			alert(nexusErrorMessage(error));
+		} finally {
+			isApproving = false;
+		}
+	}
+
 	let adminAction = $state<"result" | "techloss-p1" | "techloss-p2" | null>(
 		null,
 	);
@@ -204,9 +364,15 @@
 			alert(isDeadlyAssault ? $_("tournamentMatchPopup.enterScoreAboveZero") : $_("tournamentMatchPopup.enterTimeAboveZero"));
 			return;
 		}
-		const adminScreenshot = adminInputScreenshot?.[0] ?? null;
+		// Screenshots only for team matches; solo matches can attach a Nexus link instead.
+		const adminScreenshot = isTeamMatch ? (adminInputScreenshot?.[0] ?? null) : null;
 		if (adminScreenshot && isImageTooLarge(adminScreenshot)) {
 			alert($_("tournamentMatchPopup.fileTooLarge", { values: { max: MAX_IMAGE_SIZE_MB } }));
+			return;
+		}
+		const adminNexusUrl = isTeamMatch ? "" : adminNexus.url.trim();
+		if (adminNexusUrl && adminNexus.error) {
+			alert(adminNexus.error);
 			return;
 		}
 		if (!confirm($_("tournamentMatchPopup.confirmAdminSetResult"))) return;
@@ -218,9 +384,13 @@
 				matchResultP1,
 				matchResultP2,
 				adminScreenshot,
+				null,
+				null,
+				adminNexusUrl || null,
+				adminNexusUrl ? adminNexus.p1Side : null,
 			);
 		} catch (error) {
-			alert(error);
+			alert(nexusErrorMessage(error));
 		} finally {
 			adminAction = null;
 		}
@@ -348,6 +518,94 @@
 	{/if}
 {/snippet}
 
+{#snippet nexusWarningBlock(
+	missing: NexusMissingDto[] | null | undefined,
+	counted: number | null | undefined,
+	total: number | null | undefined,
+	leftName?: string,
+	rightName?: string,
+)}
+	{@const warning = nexusWarning(missing, counted, total, leftName, rightName)}
+	{#if warning}
+		<div class="nexus-warning">{warning}</div>
+	{/if}
+{/snippet}
+
+<!-- The result already stored on the match: live Nexus overlay, or a legacy screenshot. -->
+{#snippet storedResult()}
+	{#if match.nexusResultId}
+		{@render nexusWarningBlock(match.nexusMissing, match.nexusCountedGames, match.nexusTotalGames)}
+		<NexusResultEmbed resultId={match.nexusResultId} />
+	{:else if match.resultScreenshot}
+		{@render screenshotThumb(undefined, match.resultScreenshot)}
+	{/if}
+{/snippet}
+
+{#snippet nexusInput(target: "own" | "admin")}
+	{@const draft = target === "own" ? ownNexus : adminNexus}
+	<div class="nexus-block">
+		<label class="screenshot-label" for="{target}-nexus-link">{$_("tournamentMatchPopup.nexusLinkLabel")}</label>
+		<input
+			id="{target}-nexus-link"
+			class="field nexus-link-field"
+			type="url"
+			inputmode="url"
+			autocomplete="off"
+			placeholder={$_("tournamentMatchPopup.nexusLinkPlaceholder")}
+			value={draft.url}
+			oninput={(e) => handleNexusUrlInput(target, e.currentTarget.value)}
+		/>
+		{#if draft.loading}
+			<div class="nexus-status">{$_("tournamentMatchPopup.nexusLoading")}</div>
+		{:else if draft.error}
+			<div class="nexus-status nexus-error">{draft.error}</div>
+		{/if}
+
+		{#if draft.preview}
+			{@const preview = draft.preview}
+			{#if preview.p1IsLeft === null}
+				<div class="nexus-side-picker">
+					<span class="screenshot-label">
+						{target === "own"
+							? $_("tournamentMatchPopup.nexusPickSideLabel")
+							: $_("tournamentMatchPopup.nexusPickSideAdminLabel", {
+									values: { name: getSideLabel(match.p1, match.p1TeamId) },
+								})}
+					</span>
+					<div class="screenshot-btn-row">
+						{#each [["left", preview.leftName], ["right", preview.rightName]] as [side, name] (side)}
+							<button
+								type="button"
+								class="btn-common btn-sm-action"
+								onclick={() => pickNexusSide(target, side as NexusSide)}
+								>{target === "own"
+									? $_("tournamentMatchPopup.nexusPickSideOption", { values: { name } })
+									: name}</button
+							>
+						{/each}
+					</div>
+				</div>
+			{:else if target === "own" && preview.resultP1 && preview.resultP2}
+				<div class="match-players result-row">
+					<span class="match-player-left">{preview.resultP1}</span>
+					<span></span>
+					<span class="match-player-right">{preview.resultP2}</span>
+				</div>
+			{/if}
+			{@render nexusWarningBlock(
+				preview.missing,
+				preview.countedGames,
+				preview.totalGames,
+				preview.leftName,
+				preview.rightName,
+			)}
+			<NexusResultEmbed resultId={preview.nexusResultId} />
+		{:else if target === "own"}
+			{@render storedResult()}
+		{/if}
+	</div>
+{/snippet}
+
 <!-- svelte-ignore a11y_click_events_have_key_events -->
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <div class="popup" onclick={handleClose}>
@@ -361,49 +619,53 @@
 			{#if canApproveOwnResult}
 				<div class="divider"></div>
 
-				<div class="result-input-block">
-					<div class="result-fields input-labels">
-						<span
-							>{isDeadlyAssault ? $_("tournamentMatchPopup.enterScoreLabel") : $_("tournamentMatchPopup.enterTimeLabel")} {getSideLabel(
-								match.p1,
-								match.p1TeamId,
-							)}</span
-						>
-						<span
-							>{isDeadlyAssault ? $_("tournamentMatchPopup.enterScoreLabel") : $_("tournamentMatchPopup.enterTimeLabel")} {getSideLabel(
-								match.p2,
-								match.p2TeamId,
-							)}</span
-						>
+				{#if !isTeamMatch}
+					{@render nexusInput("own")}
+				{:else}
+					<div class="result-input-block">
+						<div class="result-fields input-labels">
+							<span
+								>{isDeadlyAssault ? $_("tournamentMatchPopup.enterScoreLabel") : $_("tournamentMatchPopup.enterTimeLabel")} {getSideLabel(
+									match.p1,
+									match.p1TeamId,
+								)}</span
+							>
+							<span
+								>{isDeadlyAssault ? $_("tournamentMatchPopup.enterScoreLabel") : $_("tournamentMatchPopup.enterTimeLabel")} {getSideLabel(
+									match.p2,
+									match.p2TeamId,
+								)}</span
+							>
+						</div>
+						<div class="result-fields">
+							{@render resultFields("own-result-p1", "own-result-p2")}
+						</div>
 					</div>
-					<div class="result-fields">
-						{@render resultFields("own-result-p1", "own-result-p2")}
-					</div>
-				</div>
 
-				<div class="screenshot-block">
-					<div class="screenshot-btn-row">
-						<input
-							bind:this={ownFileInput}
-							class="hidden-file-input"
-							type="file"
-							accept="image/*"
-							bind:files={inputScreenshot}
-						/>
-						<button
-							type="button"
-							class="btn-common btn-sm-action"
-							onclick={() => ownFileInput?.click()}>{$_("tournamentMatchPopup.chooseFile")}</button
-						>
-						<button
-							type="button"
-							class="btn-common btn-sm-action"
-							onclick={() => handlePasteScreenshot("own")}
-							>{$_("tournamentMatchPopup.pasteCtrlV")}</button
-						>
+					<div class="screenshot-block">
+						<div class="screenshot-btn-row">
+							<input
+								bind:this={ownFileInput}
+								class="hidden-file-input"
+								type="file"
+								accept="image/*"
+								bind:files={inputScreenshot}
+							/>
+							<button
+								type="button"
+								class="btn-common btn-sm-action"
+								onclick={() => ownFileInput?.click()}>{$_("tournamentMatchPopup.chooseFile")}</button
+							>
+							<button
+								type="button"
+								class="btn-common btn-sm-action"
+								onclick={() => handlePasteScreenshot("own")}
+								>{$_("tournamentMatchPopup.pasteCtrlV")}</button
+							>
+						</div>
+						{@render screenshotThumb(inputScreenshotPreview.url, match.resultScreenshot)}
 					</div>
-					{@render screenshotThumb(inputScreenshotPreview.url, match.resultScreenshot)}
-				</div>
+				{/if}
 
 				<div class="approval-row">
 					<span class="approval-pill {match.p1ApprovedResult ? 'approved' : 'pending'}">
@@ -429,11 +691,11 @@
 					class:btn-loading={isApproving}
 					onclick={handleApproveResult}>{$_("tournamentMatchPopup.confirmResultButton")}</button
 				>
-			{:else if match.resultScreenshot}
+			{:else if match.nexusResultId || match.resultScreenshot}
 				<div class="divider"></div>
 				<div class="screenshot-block">
 					<span class="screenshot-label">{$_("tournamentMatchPopup.resultLabel")}</span>
-					{@render screenshotThumb(undefined, match.resultScreenshot)}
+					{@render storedResult()}
 				</div>
 			{/if}
 		</div>
@@ -448,33 +710,39 @@
 				<div class="divider admin-divider"></div>
 				<div class="admin-label">{$_("tournamentMatchPopup.adminChangeResultLabel")}</div>
 
+				{#if !isTeamMatch}
+					{@render nexusInput("admin")}
+				{/if}
+
 				<div class="result-fields">
 					{@render resultFields("admin-result-p1", "admin-result-p2")}
 				</div>
 
-				<div class="screenshot-block">
-					<div class="screenshot-btn-row">
-						<input
-							bind:this={adminFileInput}
-							class="hidden-file-input"
-							type="file"
-							accept="image/*"
-							bind:files={adminInputScreenshot}
-						/>
-						<button
-							type="button"
-							class="btn-common btn-sm-action"
-							onclick={() => adminFileInput?.click()}>{$_("tournamentMatchPopup.chooseFile")}</button
-						>
-						<button
-							type="button"
-							class="btn-common btn-sm-action"
-							onclick={() => handlePasteScreenshot("admin")}
-							>{$_("tournamentMatchPopup.pasteFromClipboard")}</button
-						>
+				{#if isTeamMatch}
+					<div class="screenshot-block">
+						<div class="screenshot-btn-row">
+							<input
+								bind:this={adminFileInput}
+								class="hidden-file-input"
+								type="file"
+								accept="image/*"
+								bind:files={adminInputScreenshot}
+							/>
+							<button
+								type="button"
+								class="btn-common btn-sm-action"
+								onclick={() => adminFileInput?.click()}>{$_("tournamentMatchPopup.chooseFile")}</button
+							>
+							<button
+								type="button"
+								class="btn-common btn-sm-action"
+								onclick={() => handlePasteScreenshot("admin")}
+								>{$_("tournamentMatchPopup.pasteFromClipboard")}</button
+							>
+						</div>
+						{@render screenshotThumb(adminScreenshotPreview.url, match.resultScreenshot)}
 					</div>
-					{@render screenshotThumb(adminScreenshotPreview.url, match.resultScreenshot)}
-				</div>
+				{/if}
 
 				<button
 					class="btn-common btn-block"
@@ -655,6 +923,43 @@
 		justify-content: center;
 		color: var(--text-dim);
 		font-size: 11px;
+	}
+
+	.nexus-block {
+		display: flex;
+		flex-direction: column;
+		gap: 8px;
+	}
+
+	.nexus-link-field {
+		text-align: left;
+		font-weight: 400;
+		font-size: 12px;
+	}
+
+	.nexus-status {
+		font-size: 11px;
+		color: var(--text-dim);
+	}
+
+	.nexus-error {
+		color: var(--danger);
+	}
+
+	.nexus-side-picker {
+		display: flex;
+		flex-direction: column;
+		gap: 6px;
+	}
+
+	.nexus-warning {
+		padding: 8px 10px;
+		border-radius: var(--r-md);
+		border-left: 2px solid var(--gold);
+		background: var(--surface-2);
+		color: var(--text-muted);
+		font-size: 11px;
+		line-height: 1.4;
 	}
 
 	.approval-row {

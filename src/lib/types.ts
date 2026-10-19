@@ -3,6 +3,8 @@
 // so the rest of the app (tournamentState.ts, sorting, countdowns) can keep doing plain number math
 // exactly as it did against the old Firebase RTDB shape.
 
+import type { NexusMissingDto } from "./api/dtos";
+
 export type PlayerRole = "player" | "moderator" | "admin";
 
 export interface LastRegistrationData {
@@ -96,6 +98,13 @@ export interface TournamentMatch {
 	p2ApprovedResult: boolean;
 	techLossUid: string | null;
 	techLossTeamId: string | null;
+	// Set when the result came from a nexus-shiyu.com result link (solo matches) — see
+	// NexusResultEmbed. nexusMissing lists values Nexus didn't have (only nexusCountedGames of
+	// nexusTotalGames games were counted).
+	nexusResultId: string | null;
+	nexusTotalGames: number | null;
+	nexusCountedGames: number | null;
+	nexusMissing: NexusMissingDto[] | null;
 }
 
 export type TournamentRegistrationKind = "solo" | "team";
