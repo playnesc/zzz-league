@@ -53,7 +53,6 @@
 			<a class="nav-link" class:active={isActive(resolve("/tournaments"))} href={resolve("/tournaments")}>{$_("header.tournamentArchive")}</a>
 			<a class="nav-link" class:active={isActive(resolve("/teams"))} href={resolve("/teams")}>{$_("header.teams")}</a>
 			<a class="nav-link" class:active={isActive(resolve("/history"))} href={resolve("/history")}>{$_("header.matchHistory")}</a>
-			<a class="nav-link" class:active={isActive(resolve("/costs"))} href={resolve("/costs")}>{$_("header.communityCost")}</a>
 		</nav>
 	</div>
 	<div class="social-links">
