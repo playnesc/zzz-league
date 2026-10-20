@@ -53,6 +53,7 @@
 			<button
 				class="top-tab"
 				class:active={activeTab === "agents"}
+				aria-pressed={activeTab === "agents"}
 				onclick={() => (activeTab = "agents")}
 			>
 				{$_("pageCosts.agentsTab")}
@@ -60,9 +61,10 @@
 			<button
 				class="top-tab"
 				class:active={activeTab === "weapons"}
+				aria-pressed={activeTab === "weapons"}
 				onclick={() => (activeTab = "weapons")}
 			>
-				W-Engines
+				{$_("pageCosts.weaponsTab")}
 			</button>
 
 			<div class="csv-actions">
@@ -142,7 +144,7 @@
 	}
 
 	.top-tab:hover {
-		border-color: var(--border-soft);
+		border-color: var(--gold-border);
 		color: var(--text);
 	}
 
@@ -161,7 +163,6 @@
 
 	.csv-actions .btn-common {
 		height: 32px;
-		font-size: 12px;
 		padding: 0 12px;
 		width: auto;
 	}

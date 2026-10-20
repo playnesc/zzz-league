@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { modal } from "$lib/actions/modal";
 	import { getAgentAvatar } from "$lib/agentAvatars";
 	import AvatarPickerPopup from "$lib/components/AvatarPickerPopup.svelte";
 	import { _ } from "$lib/i18n";
@@ -116,12 +117,8 @@
 	}
 </script>
 
-<!-- svelte-ignore a11y_click_events_have_key_events -->
-<!-- svelte-ignore a11y_no_static_element_interactions -->
-<div class="popup" onclick={close}>
-	<!-- svelte-ignore a11y_click_events_have_key_events -->
-	<!-- svelte-ignore a11y_no_static_element_interactions -->
-	<div class="card settings-card" onclick={(e) => e.stopPropagation()}>
+<div class="popup">
+	<div class="card settings-card" use:modal={close}>
 		<div class="close-row">
 			<button class="icon-btn" onclick={close} aria-label={$_("common.close")}>
 				<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
@@ -236,22 +233,6 @@
 		width: 420px;
 		padding: 20px 26px 26px;
 		gap: 16px;
-	}
-
-	.close-row {
-		display: flex;
-		justify-content: flex-end;
-		margin-bottom: -10px;
-	}
-
-	.popup-title {
-		display: block;
-		font-size: 18px;
-		font-weight: 700;
-		text-align: center;
-		margin-bottom: 0;
-		border: none;
-		padding-bottom: 0;
 	}
 
 	.divider {

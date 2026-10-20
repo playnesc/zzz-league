@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { confirmDialog, notify } from "$lib/dialogs";
 	import { untrack } from "svelte";
 	import { resolve } from "$app/paths";
 	import { _, locale, formatDate as formatLocalizedDate } from "$lib/i18n";
@@ -87,17 +88,14 @@
 	}
 
 	async function handleDelete(id: string) {
-		if (
-			!confirm($_("historyList.confirmDelete"))
-		)
-			return;
+		if (!(await confirmDialog($_("historyList.confirmDelete"), { danger: true, confirmLabel: $_("common.delete") }))) return;
 		try {
 			await deleteHistoryEntry(id);
 			// Drop it from whichever cached page holds it — the keyset cursors stay valid since
 			// they're (timestamp, id) boundaries, not references to a still-existing row.
 			pageCache = pageCache.map((page) => page.filter((e) => e.id !== id));
 		} catch (error) {
-			alert(error);
+			notify(error);
 		}
 	}
 
@@ -156,7 +154,7 @@
 			matchPopupMatch = match;
 			matchPopupOpen = true;
 		} catch (error) {
-			alert(error);
+			notify(error);
 		} finally {
 			loadingMatchEntryId = null;
 		}
@@ -228,50 +226,37 @@
 		{@const rightResult = isLeft ? entry.resultP2 : entry.resultP1}
 
 		{@const canOpenMatch = !!entry.tournamentId && !!entry.tournamentMatchId}
-		<!-- svelte-ignore a11y_click_events_have_key_events -->
-		<!-- svelte-ignore a11y_no_static_element_interactions -->
 		<div
 			class="h-item {viewerId ? changeClass(leftChange) : ''}"
 			class:clickable={canOpenMatch}
 			class:btn-loading={loadingMatchEntryId === entry.id}
-			onclick={() => canOpenMatch && openMatchFromEntry(entry)}
 		>
+			{#if canOpenMatch}
+				<!-- the whole row opens the match; names and links sit above this as their own controls -->
+				<button
+					type="button"
+					class="h-open"
+					aria-label={$_("historyList.openMatchLabel")}
+					onclick={() => openMatchFromEntry(entry)}
+				></button>
+			{/if}
 			<div class="h-players">
 				<span class="h-delta {changeClass(leftChange)}"
 					>{leftChange > 0 ? "+" : ""}{leftChange}</span
 				>
-				<!-- svelte-ignore a11y_click_events_have_key_events -->
-				<!-- svelte-ignore a11y_no_static_element_interactions -->
-				<span
-					class="h-name"
-					onclick={(e) => {
-						e.stopPropagation();
-						openPlayer(left);
-					}}
-				>
+				<button type="button" class="h-name" onclick={() => openPlayer(left)}>
 					{getPlayerName(left)}
-				</span>
+				</button>
 				{#if right}
-					<span class="h-vs">vs</span>
-					<!-- svelte-ignore a11y_click_events_have_key_events -->
-					<!-- svelte-ignore a11y_no_static_element_interactions -->
-					<span
-						class="h-name"
-						class:opponent={!!viewerId}
-						onclick={(e) => {
-							e.stopPropagation();
-							openPlayer(right!);
-						}}
-					>
+					<span class="h-vs">{$_("common.versus")}</span>
+					<button type="button" class="h-name" class:opponent={!!viewerId} onclick={() => openPlayer(right!)}>
 						{getPlayerName(right)}
-					</span>
+					</button>
 					<span class="h-delta {changeClass(rightChange!)}"
 						>{rightChange! > 0 ? "+" : ""}{rightChange}</span
 					>
-				{:else if viewerId}
-					<span class="h-vs adjustment">{$_("historyList.eloAdjustment")}</span>
 				{:else}
-					<span class="h-vs adjustment">— {$_("historyList.eloAdjustment")}</span>
+					<span class="h-vs adjustment">{$_("historyList.eloAdjustment")}</span>
 				{/if}
 			</div>
 			<div class="h-score-wrap">
@@ -286,7 +271,6 @@
 					<a
 						class="h-tournament"
 						href={resolve(`/tournaments/${entry.tournamentId}`)}
-						onclick={(e) => e.stopPropagation()}
 					>
 						{entry.tournamentName ?? $_("historyList.tournament")}
 					</a>
@@ -298,10 +282,8 @@
 					<button
 						class="h-icon-btn danger"
 						title={$_("common.delete")}
-						onclick={(e) => {
-							e.stopPropagation();
-							handleDelete(entry.id);
-						}}
+						aria-label={$_("common.delete")}
+						onclick={() => handleDelete(entry.id)}
 					>
 						<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
 					</button>
@@ -311,27 +293,23 @@
 			</div>
 		</div>
 	{:else}
-		<span>{loading ? $_("common.loading") : $_("historyList.noGames")}</span>
+		<p class="empty-state">{loading ? $_("common.loading") : $_("historyList.noGames")}</p>
 	{/each}
 </div>
 
 {#if pageIndex > 0 || hasMoreAfterPage[pageIndex]}
 	<div class="pager">
-		<button
-			class="btn-common pager-btn"
-			disabled={pageIndex === 0 || loading}
-			onclick={() => loadPage(pageIndex - 1)}
-			>← {$_("common.back")}</button
-		>
+		<button class="btn-common btn-sm" disabled={pageIndex === 0 || loading} onclick={() => loadPage(pageIndex - 1)}>
+			<svg aria-hidden="true" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+			{$_("historyList.previous")}
+		</button>
 		<span class="pager-label"
 			>{$_("historyList.pageLabel", { values: { page: pageIndex + 1 } })}</span
 		>
-		<button
-			class="btn-common pager-btn"
-			disabled={!hasMoreAfterPage[pageIndex] || loading}
-			onclick={() => loadPage(pageIndex + 1)}
-			>{$_("historyList.next")} →</button
-		>
+		<button class="btn-common btn-sm" disabled={!hasMoreAfterPage[pageIndex] || loading} onclick={() => loadPage(pageIndex + 1)}>
+			{$_("historyList.next")}
+			<svg aria-hidden="true" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+		</button>
 	</div>
 {/if}
 
@@ -348,6 +326,7 @@
 <style>
 	.h-item {
 		--btn-fg: var(--text);
+		position: relative;
 		display: flex;
 		align-items: center;
 		gap: 14px;
@@ -368,8 +347,29 @@
 		border-left-color: var(--danger);
 	}
 
-	.h-item.clickable {
+	.h-open {
+		position: absolute;
+		inset: 0;
+		z-index: 0;
+		padding: 0;
+		background: none;
+		border: none;
+		border-radius: inherit;
 		cursor: pointer;
+	}
+
+	.h-players,
+	.h-score-wrap,
+	.h-meta {
+		position: relative;
+		z-index: 1;
+		pointer-events: none;
+	}
+
+	.h-name,
+	.h-tournament,
+	.h-icon-btn {
+		pointer-events: auto;
 	}
 
 	.h-item.clickable:hover {
@@ -386,6 +386,11 @@
 	}
 
 	.h-name {
+		padding: 0;
+		background: none;
+		border: none;
+		font: inherit;
+		color: inherit;
 		cursor: pointer;
 		min-width: 0;
 		overflow: hidden;
@@ -398,7 +403,7 @@
 	}
 
 	.h-name.opponent {
-		color: var(--text-dim);
+		color: var(--text-muted);
 		font-weight: 500;
 	}
 
@@ -417,7 +422,7 @@
 		font-size: 11px;
 		font-weight: 800;
 		padding: 1px 5px;
-		border-radius: 4px;
+		border-radius: var(--r-xs);
 		flex-shrink: 0;
 		font-variant-numeric: tabular-nums;
 	}
@@ -525,15 +530,34 @@
 		padding: 16px 0 4px;
 	}
 
-	.pager-btn {
-		height: 32px;
-		font-size: 12px;
-		padding: 0 14px;
-	}
-
 	.pager-label {
 		font-size: 12px;
-		color: var(--text-dim);
+		color: var(--text-muted);
 		font-weight: 600;
+	}
+
+	/* phones: players on the first line; score, tournament, date and delete underneath */
+	@media (max-width: 640px) {
+		.h-item {
+			height: auto;
+			min-height: 38px;
+			flex-wrap: wrap;
+			gap: 4px 12px;
+			padding: 8px 12px;
+		}
+
+		.h-players {
+			flex: 1 1 100%;
+		}
+
+		.h-score-wrap {
+			flex: 0 0 auto;
+		}
+
+		.h-meta {
+			flex: 1 1 0;
+			min-width: 0;
+			grid-template-columns: minmax(0, 1fr) auto 24px;
+		}
 	}
 </style>

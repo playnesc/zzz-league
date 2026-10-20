@@ -40,6 +40,47 @@ export function hasTournamentStarted(state: string | undefined): boolean {
 	);
 }
 
+// One status per tournament for the card and the detail page. `upcoming` is a tournament whose
+// registration window hasn't opened yet.
+export type TournamentStatus =
+	| "upcoming"
+	| "registration"
+	| "registration_closed"
+	| "bracket_created"
+	| "ongoing"
+	| "complete";
+
+export type StatusTone = "success" | "info" | "gold" | "neutral";
+
+export const STATUS_TONE: Record<TournamentStatus, StatusTone> = {
+	upcoming: "info",
+	registration: "success",
+	registration_closed: "info",
+	bracket_created: "info",
+	ongoing: "gold",
+	complete: "neutral",
+};
+
+export function getTournamentStatus(
+	t: { state?: string; registrationStartDate: number; registrationEndDate: number },
+	now: number,
+): TournamentStatus {
+	switch (t.state) {
+		case TOURNAMENT_STATE.COMPLETE:
+			return "complete";
+		case TOURNAMENT_STATE.STARTED:
+		case TOURNAMENT_STATE.AWAITING_REVIEW:
+			return "ongoing";
+		case TOURNAMENT_STATE.BRACKET_CREATED:
+			return "bracket_created";
+		case TOURNAMENT_STATE.REGISTRATION_CLOSED:
+			return "registration_closed";
+	}
+	if (now < t.registrationStartDate) return "upcoming";
+	if (now < t.registrationEndDate) return "registration";
+	return "registration_closed";
+}
+
 export function isLocked(state: string | undefined): boolean {
 	return isBracketCreated(state) || hasTournamentStarted(state);
 }

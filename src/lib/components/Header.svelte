@@ -227,8 +227,8 @@
 		background: var(--surface);
 		border: 1px solid var(--border);
 		border-radius: var(--r-md);
-		box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
-		z-index: 50;
+		box-shadow: var(--shadow-pop);
+		z-index: var(--z-dropdown);
 	}
 
 	.lang-option {
@@ -273,5 +273,36 @@
 		background: var(--surface-hover);
 		color: var(--text);
 		border-color: var(--gold-border);
+	}
+
+	/* narrow: logo + socials on the first row, nav scrolls horizontally on its own row */
+	@media (max-width: 900px) {
+		.site-header {
+			flex-wrap: wrap;
+			row-gap: 10px;
+		}
+
+		.header-left {
+			display: contents;
+		}
+
+		.nav-links {
+			order: 3;
+			flex: 1 1 100%;
+			min-width: 0;
+			overflow-x: auto;
+			gap: 4px;
+			scrollbar-width: none;
+		}
+
+		.nav-link {
+			white-space: nowrap;
+		}
+	}
+
+	@media (max-width: 640px) {
+		.site-header {
+			padding: 10px 12px;
+		}
 	}
 </style>

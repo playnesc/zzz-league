@@ -14,6 +14,7 @@
 	import { resolve } from "$app/paths";
 	import { onMount } from "svelte";
 	import { _ } from "$lib/i18n";
+	import { confirmDialog, notify, promptDialog } from "$lib/dialogs";
 
 	let players = $state<PlayerListItem[]>([]);
 
@@ -72,26 +73,29 @@
 	let winningPlayer = $state("1");
 
 	async function handleSetTimer() {
-		const hours = prompt($_("adminPanel.setTimerPrompt"));
+		const hours = await promptDialog($_("adminPanel.setTimerPrompt"), { inputType: "number" });
 		if (hours) {
 			try {
 				await setSeasonTimer(Date.now() + parseFloat(hours) * 3600000);
 				await refreshSeasonTimer();
 			} catch (error) {
-				alert(error);
+				notify(error);
 			}
 		}
 	}
 
 	async function handleAddPlayer() {
-		const playerName = prompt($_("adminPanel.addPlayerPrompt"));
+		const playerName = (await promptDialog($_("adminPanel.addPlayerPrompt")))?.trim();
 		if (!playerName) return;
-		if (playerName.length < 2) alert($_("adminPanel.playerNameTooShort"));
+		if (playerName.length < 2) {
+			notify($_("adminPanel.playerNameTooShort"));
+			return;
+		}
 		try {
 			const created = await addPlayer(playerName);
 			patchPlayers([created]);
 		} catch (error) {
-			alert(error);
+			notify(error);
 		}
 	}
 
@@ -101,7 +105,7 @@
 			!selectedPlayer2 ||
 			selectedPlayer1.name === selectedPlayer2.name
 		) {
-			return alert($_("adminPanel.selectDifferentPlayersShort"));
+			return notify($_("adminPanel.selectDifferentPlayersShort"));
 		}
 
 		try {
@@ -112,7 +116,7 @@
 			};
 			showingForecast = true;
 		} catch (error) {
-			alert(error);
+			notify(error);
 		}
 	}
 
@@ -124,7 +128,7 @@
 			!selectedPlayer2 ||
 			selectedPlayer1.name === selectedPlayer2.name
 		) {
-			alert($_("adminPanel.selectDifferentPlayers"));
+			notify($_("adminPanel.selectDifferentPlayers"));
 			return;
 		}
 
@@ -142,7 +146,7 @@
 
 			showingForecast = false;
 		} catch (error) {
-			alert(error);
+			notify(error);
 		} finally {
 			registeringMatch = false;
 		}
@@ -156,7 +160,7 @@
 			!selectedPlayer2 ||
 			selectedPlayer1.name === selectedPlayer2.name
 		) {
-			alert($_("adminPanel.selectDifferentPlayers"));
+			notify($_("adminPanel.selectDifferentPlayers"));
 			return;
 		}
 
@@ -164,9 +168,10 @@
 		const loserName =
 			winner === 1 ? selectedPlayer2.name : selectedPlayer1.name;
 		if (
-			!confirm(
-				$_("adminPanel.techLossConfirm", { values: { loserName } }),
-			)
+			!(await confirmDialog($_("adminPanel.techLossConfirm", { values: { loserName } }), {
+					danger: true,
+					confirmLabel: $_("adminPanel.techLossButton"),
+				}))
 		) {
 			return;
 		}
@@ -184,43 +189,42 @@
 
 			showingForecast = false;
 		} catch (error) {
-			alert(error);
+			notify(error);
 		} finally {
 			registeringTechLoss = false;
 		}
 	}
 
 	async function handleResetSeason() {
-		const name = prompt($_("adminPanel.resetSeasonPrompt"));
+		const name = (await promptDialog($_("adminPanel.resetSeasonPrompt")))?.trim();
 		if (!name) return;
 		try {
 			await resetSeason(name);
 			await reloadPlayers();
 		} catch (error) {
-			alert(error);
+			notify(error);
 		}
 	}
 
 	async function handleBackfillLastPlayed() {
-		if (!confirm($_("adminPanel.backfillConfirm")))
-			return;
+		if (!(await confirmDialog($_("adminPanel.backfillConfirm")))) return;
 		try {
 			const { updatedPlayers } = await backfillLastPlayedTimestamps();
 			await reloadPlayers();
-			alert($_("adminPanel.backfillDone", { values: { count: updatedPlayers } }));
+			notify($_("adminPanel.backfillDone", { values: { count: updatedPlayers } }), "success");
 		} catch (error) {
-			alert(error);
+			notify(error);
 		}
 	}
 
 	async function handleFinalizeTournament() {
-		if (!confirm($_("adminPanel.finalizeConfirm"))) return;
+		if (!(await confirmDialog($_("adminPanel.finalizeConfirm"), { confirmLabel: $_("adminPanel.applyResults") }))) return;
 
 		try {
 			await finalizeTournament();
 			await reloadPlayers();
 		} catch (error) {
-			alert(error);
+			notify(error);
 		}
 	}
 </script>
@@ -264,10 +268,11 @@
 		<input
 			type="text"
 			class="search-input"
+			aria-label={$_("adminPanel.searchPlayer1Placeholder")}
 			placeholder={$_("adminPanel.searchPlayer1Placeholder")}
 			bind:value={searchQueryP1}
 		/>
-		<select bind:value={selectedPlayer1}>
+		<select bind:value={selectedPlayer1} aria-label={$_("adminPanel.player1Label")}>
 			{#each filteredPlayers1 as player}
 				<option value={player}>{player.name}</option>
 			{/each}
@@ -276,17 +281,17 @@
 		<input
 			type="text"
 			class="search-input"
+			aria-label={$_("adminPanel.searchPlayer2Placeholder")}
 			placeholder={$_("adminPanel.searchPlayer2Placeholder")}
 			bind:value={searchQueryP2}
-			style="margin-top: 4px;"
 		/>
-		<select bind:value={selectedPlayer2}>
+		<select bind:value={selectedPlayer2} aria-label={$_("adminPanel.player2Label")}>
 			{#each filteredPlayers2 as player}
 				<option value={player}>{player.name}</option>
 			{/each}
 		</select>
 
-		<button class="btn-common btn-sm" onclick={showForecast} style="margin-top: 2px;">
+		<button class="btn-common btn-sm" onclick={showForecast}>
 			<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
 			{$_("adminPanel.eloForecastButton")}
 		</button>
@@ -308,11 +313,11 @@
 			</div>
 		{/if}
 
-		<select bind:value={winningPlayer} style="margin-top: 2px;">
+		<select bind:value={winningPlayer} aria-label={$_("adminPanel.matchRecordingLabel")}>
 			<option value="1">{$_("adminPanel.player1WinOption")}</option>
 			<option value="0">{$_("adminPanel.player2WinOption")}</option>
 		</select>
-		<button type="button" class="btn-common btn-play" onclick={handleRegisterMatch} style="margin-top: 2px;">
+		<button type="button" class="btn-common btn-play" onclick={handleRegisterMatch}>
 			<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
 			{$_("adminPanel.registerMatchButton")}
 		</button>
@@ -338,11 +343,6 @@
 	}
 
 	.admin-card :global(h2) {
-		font-size: 12px;
-		font-weight: 700;
-		color: var(--text-dim);
-		border: none;
-		padding: 0;
 		margin-bottom: 14px;
 	}
 
@@ -365,10 +365,10 @@
 	}
 
 	.section-label {
-		font-size: 16px;
-		font-weight: 700;
-		color: var(--text-dim);
-		margin-bottom: 10px;
+		font-size: var(--fs-sm);
+		font-weight: 600;
+		color: var(--text-muted);
+		margin-bottom: 8px;
 	}
 
 

@@ -1,15 +1,24 @@
 {
 	"common": {
+		"approveRegistration": "Подтвердить регистрацию",
+		"revokeApproval": "Отменить подтверждение",
+		"singleElimination": "Одиночное выбывание",
+		"doubleElimination": "Двойное выбывание",
+		"notSet": "Не задано",
+		"versus": "vs",
 		"cancel": "Отмена",
 		"save": "Сохранить",
 		"close": "Закрыть",
+		"imagePreview": "Просмотр изображения",
+		"unexpectedError": "Что-то пошло не так. Попробуйте ещё раз.",
+		"discard": "Сбросить",
 		"delete": "Удалить",
 		"confirm": "Подтвердить",
 		"edit": "Редактировать",
 		"add": "Добавить",
 		"create": "Создать",
 		"back": "Назад",
-		"loading": "Загрузка...",
+		"loading": "Загрузка…",
 		"yes": "Да",
 		"no": "Нет"
 	},
@@ -41,10 +50,11 @@
 	"avatarPickerPopup": {
 		"title": "Выберите аватар",
 		"searchLabel": "Поиск аватара",
-		"searchPlaceholder": "Поиск...",
+		"searchPlaceholder": "Поиск…",
 		"noResults": "Ничего не найдено"
 	},
 	"tournamentCard": {
+		"registrationOpens": "Регистрация с {date}",
 		"registrationUntil": "Регистрация до {date}",
 		"startsOn": "Начало {date}",
 		"ongoing": "Турнир идёт",
@@ -56,6 +66,7 @@
 		"player2Label": "Игрок 2"
 	},
 	"pageCosts": {
+		"weaponsTab": "W-Engines",
 		"importSuccess": "Импорт выполнен.",
 		"agentsTab": "Персонажи",
 		"exportCsv": "Экспорт CSV",
@@ -63,8 +74,9 @@
 		"importCsv": "Импорт CSV"
 	},
 	"pageTeams": {
+		"noResults": "Команды по запросу не найдены.",
 		"title": "Команды",
-		"searchPlaceholder": "Поиск...",
+		"searchPlaceholder": "Поиск…",
 		"noTeams": "Команд пока нет"
 	},
 	"pageTeamsMine": {
@@ -75,8 +87,8 @@
 	},
 	"pageDiscordCallback": {
 		"errorLabel": "Ошибка {error}",
-		"redirecting": "Возврат на главую страницу...",
-		"connecting": "Подключение Discord..."
+		"redirecting": "Возврат на главую страницу…",
+		"connecting": "Подключение Discord…"
 	},
 	"pageTournamentsCreate": {
 		"title": "Создать турнир",
@@ -93,7 +105,7 @@
 		"roleModerator": "Модератор",
 		"empty": "Модераторов и админов пока нет.",
 		"promoteLabel": "Назначить модератором",
-		"searchPlayerPlaceholder": "Поиск игрока...",
+		"searchPlayerPlaceholder": "Поиск игрока…",
 		"promoteButton": "Назначить",
 		"demoteButton": "Снять",
 		"promoteConfirm": "Назначить {name} модератором?",
@@ -119,7 +131,7 @@
 		"namePlaceholder": "Название команды",
 		"partnerLabel": "Напарник",
 		"searchPartnerLabel": "Поиск напарника",
-		"searchPlaceholder": "Поиск...",
+		"searchPlaceholder": "Поиск…",
 		"selectPlayerOption": "Выберите игрока",
 		"fileTooLarge": "Файл слишком большой, максимум {maxSize}МБ"
 	},
@@ -177,7 +189,7 @@
 		"tournamentStarted": "Турнир уже начался, регистрация закрыта.",
 		"registrationClosed": "Регистрация на турнир закрыта.",
 		"prefillButton": "Заполнить из прошлой регистрации",
-		"awarenessRequired": "Ты не ОСОЗНАЛ.",
+		"awarenessRequired": "Вы не подтвердили, что ознакомились с правилами.",
 		"fillAllFields": "Заполните все поля",
 		"fileTooLarge": "Файл слишком большой, максимум {maxSize}МБ",
 		"awarenessPrefix": "Конечно, я полностью прочитал регламент, и осознаю, что турнир проходит с",
@@ -191,7 +203,7 @@
 		"myTeams": "Мои команды",
 		"myHistory": "Моя история",
 		"logout": "Выход",
-		"leagueCodeTitle": "🏆 Кодекс Лиги",
+		"leagueCodeTitle": "Кодекс Лиги",
 		"rules": {
 			"ranks": "<b>Ранги:</b> <span class=\"tier-badge t-newbie\">NEWBIE</span> <b>1000+</b>, <span class=\"tier-badge t-mid\">MID</span> <b>1200+</b>, <span class=\"tier-badge t-high\">HIGH</span> <b>1400+</b>.",
 			"qualification": "<b>Квалификация:</b> Для входа в <span class=\"tier-badge t-mid\">MID TIER</span> нужно <b>1200</b> ELO. Для <span class=\"tier-badge t-high\">HIGH TIER</span> достаточно достичь отметки <b>1400</b> ELO.",
@@ -232,7 +244,7 @@
 		"discussionWithCount": "Обсуждение ({count})",
 		"discussionStart": "Обсудить",
 		"noCommentsYet": "Пока нет комментариев.",
-		"commentPlaceholder": "Написать комментарий...",
+		"commentPlaceholder": "Написать комментарий…",
 		"send": "Отправить",
 		"reviewCommentPlaceholder": "Комментарий к отзыву",
 		"submitting": "Отправка…",
@@ -310,13 +322,13 @@
 	"tournamentFormFields": {
 		"sectionBasic": "Основное",
 		"nameLabel": "Название",
-		"registrationTypeLabel": "Тип регистрации",
+		"registrationTypeLabel": "Формат",
 		"gameModeLabel": "Режим игры",
 		"descriptionLabel": "Описание",
 		"descriptionPlaceholder": "Markdown поддерживается…",
 		"previewLabel": "Превью",
 		"sectionFormat": "Формат",
-		"tournamentTypeLabel": "Тип турнира",
+		"tournamentTypeLabel": "Система",
 		"breakTiesLabel": "Решать ничьи матчами за место",
 		"placeLabel": "Место",
 		"fixedEloLabel": "Фиксированное эло за победу/поражение",
@@ -341,18 +353,20 @@
 	"tournamentAddTeamPopup": {
 		"title": "Добавить команду",
 		"searchLabel": "Поиск команды",
-		"searchPlaceholder": "Поиск команды...",
+		"searchPlaceholder": "Поиск команды…",
 		"teamLabel": "Команда",
 		"selectTeamOption": "Выберите команду"
 	},
 	"tournamentAddPlayerPopup": {
 		"title": "Добавить игрока",
 		"searchLabel": "Поиск игрока",
-		"searchPlaceholder": "Поиск игрока...",
+		"searchPlaceholder": "Поиск игрока…",
 		"playerLabel": "Игрок",
 		"selectPlayerOption": "Выберите игрока"
 	},
 	"adminPanel": {
+		"player1Label": "Игрок 1",
+		"player2Label": "Игрок 2",
 		"title": "Панель управления",
 		"createTournament": "Создать турнир",
 		"adminPageButton": "Админка",
@@ -362,8 +376,8 @@
 		"addPlayerTooltip": "Добавить игрока",
 		"addPlayerButton": "Игрока",
 		"matchRecordingLabel": "Запись матча",
-		"searchPlayer1Placeholder": "Поиск Игрока 1...",
-		"searchPlayer2Placeholder": "Поиск Игрока 2...",
+		"searchPlayer1Placeholder": "Поиск Игрока 1…",
+		"searchPlayer2Placeholder": "Поиск Игрока 2…",
 		"eloForecastButton": "Прогноз ELO",
 		"player1WinOption": "Победа Игрока 1",
 		"player2WinOption": "Победа Игрока 2",
@@ -379,7 +393,7 @@
 		"resetSeasonPrompt": "Название сезона для архива:",
 		"backfillConfirm": "Пересчитать дату последнего матча для всех игроков?",
 		"backfillDone": "Обновлено игроков: {count}",
-		"finalizeConfirm": "Применить очки?"
+		"finalizeConfirm": "Начислить игрокам все изменения ELO? Это действие нельзя отменить."
 	},
 	"tournamentMemberRegistrationFields": {
 		"noImageInClipboard": "В буфере обмена нет изображения",
@@ -398,7 +412,7 @@
 		"hoyolabScreenshotLabel": "Скриншот персонажей в Hoyolab"
 	},
 	"pageTournamentRegisterTeam": {
-		"notAware": "Ты не ОСОЗНАЛ.",
+		"notAware": "Вы не подтвердили, что ознакомились с правилами.",
 		"fillAllFields": "Заполните все поля для обоих игроков",
 		"fileTooLarge": "Файл слишком большой, максимум {max}МБ",
 		"pageTitle": "Регистрация команды: {name}",
@@ -439,6 +453,8 @@
 		"matchHistory": "История матчей"
 	},
 	"historyList": {
+		"previous": "Назад",
+		"openMatchLabel": "Открыть матч",
 		"confirmDelete": "Удалить запись? ELO/очки и победы/поражения будут отменены.",
 		"legacyDivider": "Легаси история (возможны ошибки)",
 		"eloAdjustment": "Корректировка ELO",
@@ -449,6 +465,7 @@
 		"next": "Вперед"
 	},
 	"loginPopup": {
+		"emailLabel": "Эл. почта",
 		"resetPasswordTitle": "Сброс пароля",
 		"checkEmailMessage": "Проверьте почту (спам в том числе)",
 		"sendCode": "Отправить код",
@@ -483,7 +500,7 @@
 		"leaderboardTitle": "Турнирная Таблица ZZZ",
 		"currentLeague": "Текущая лига",
 		"showInactivePlayers": "Показать неактивных игроков",
-		"searchPlaceholder": "Поиск...",
+		"searchPlaceholder": "Поиск…",
 		"seasonArchive": "Архив сезонов:"
 	},
 	"contributionMenu": {
@@ -494,6 +511,10 @@
 		"proposeChange": "Предложить изменение"
 	},
 	"pageTournamentDetail": {
+		"openMatchLabel": "Открыть матч: {p1} против {p2}",
+		"adminToolsHeading": "Инструменты администратора",
+		"deleteTournamentHint": "Удаляет турнир вместе с матчами и регистрациями. Это действие нельзя отменить.",
+		"notFound": "Турнир не найден.",
 		"statusRegistrationOpen": "Идёт регистрация",
 		"statusRegistrationClosed": "Регистрация закрыта",
 		"statusBracketCreated": "Сетка создана, ожидает начала",
@@ -508,7 +529,7 @@
 		"confirmDeleteTournament": "Удалить турнир \"{name}\"? Это действие необратимо.",
 		"noViewPermission": "Недостаточно прав для просмотра этой страницы.",
 		"divisionLabel": "Сетка {index}",
-		"specTournamentType": "Тип турнира",
+		"specTournamentType": "Формат",
 		"specGameMode": "Игровой режим",
 		"specSystem": "Система",
 		"specCostRange": "Рамки коста",
@@ -539,11 +560,13 @@
 		"gamesHeading": "Игры",
 		"showCompletedMatchesLabel": "Показать завершённые матчи",
 		"showOnlyMyMatchesLabel": "Показать только мои матчи",
-		"searchPlaceholder": "Поиск...",
+		"searchPlaceholder": "Поиск…",
 		"noMatchesFound": "Матчи не найдены",
 		"participantsHeading": "Участники"
 	},
 	"pageTournamentSplit": {
+		"moveToLabel": "Переместить {name} в",
+		"unassignedOption": "Не распределён",
 		"errorNotEnoughApproved": "Недостаточно одобренных игроков для разделения (нужно минимум 4, сейчас {count})",
 		"errorMinDivisions": "Должно быть минимум 2 сетки",
 		"errorTooManyDivisions": "Слишком много сеток: максимум {max} при {count} игроках",
@@ -564,7 +587,7 @@
 		"unassignedHeading": "Не распределены ({count})",
 		"divisionHeading": "Сетка {index}",
 		"playersLabel": "Игроков",
-		"dragHint": "Перетащите игроков между колонками для распределения.",
+		"dragHint": "Перетаскивайте игроков между колонками или выберите сетку в меню у игрока.",
 		"splitButton": "Разделить"
 	},
 	"pageTournamentEdit": {

@@ -146,11 +146,12 @@
 						? $_("pageHome.archiveTitle", { values: { name: archiveKey } })
 						: $_("pageHome.leaderboardTitle")}
 				</h2>
-				<div style="display:flex; align-items:center; gap:16px;">
+				<div class="toolbar">
 					{#if isViewingArchive}
-						<button class="btn-common current-league-btn" onclick={loadLive}
-							>← {$_("pageHome.currentLeague")}</button
-						>
+						<button class="btn-common btn-sm" onclick={loadLive}>
+							<svg aria-hidden="true" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+							{$_("pageHome.currentLeague")}
+						</button>
 					{:else}
 						<label class="filter-toggle">
 							<span class="cb-wrap">
@@ -166,6 +167,8 @@
 						<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" class="search-icon"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
 						<input
 							class="search-input"
+							type="search"
+							aria-label={$_("pageHome.searchPlaceholder")}
 							placeholder={$_("pageHome.searchPlaceholder")}
 							bind:value={searchQuery}
 						/>
@@ -220,7 +223,7 @@
 	.timer-card {
 		background: var(--surface);
 		border: 1px solid var(--border-soft);
-		border-left: var(--r-lg) solid var(--gold);
+		border-left: 4px solid var(--gold);
 		border-radius: var(--r-lg);
 		padding: 14px 22px;
 		display: flex;
@@ -324,29 +327,32 @@
 		border-radius: 0 0 var(--r-lg) var(--r-lg);
 	}
 
+	.toolbar {
+		display: flex;
+		align-items: center;
+		gap: 16px;
+		flex-wrap: wrap;
+	}
+
 	.search-field {
 		position: relative;
 		width: 160px;
 	}
 
-	.search-icon {
-		position: absolute;
-		left: 10px;
-		top: 50%;
-		transform: translateY(-50%);
-		color: var(--text-dim);
-		pointer-events: none;
+	@media (max-width: 640px) {
+		.toolbar,
+		.search-field {
+			width: 100%;
+		}
+
+		.toolbar {
+			gap: 10px;
+		}
 	}
 
 	.search-field .search-input {
 		width: 100%;
 		padding-left: 28px;
-	}
-
-	.current-league-btn {
-		height: 32px;
-		padding: 0 14px;
-		font-size: 12px;
 	}
 
 	.archive-section {
@@ -361,12 +367,6 @@
 		flex-direction: row;
 		flex-wrap: wrap;
 		gap: 8px;
-	}
-
-	.archive-buttons .btn-common {
-		height: 32px;
-		padding: 0 12px;
-		font-size: 12px;
 	}
 
 	.section-label {
@@ -388,43 +388,4 @@
 		white-space: nowrap;
 	}
 
-	.cb-wrap {
-		position: relative;
-		display: inline-flex;
-		flex-shrink: 0;
-		width: 15px;
-		height: 15px;
-	}
-
-	.cb-input {
-		appearance: none;
-		-webkit-appearance: none;
-		-moz-appearance: none;
-		box-sizing: border-box;
-		flex: 0 0 15px;
-		min-width: 15px;
-		max-width: 15px;
-		width: 15px;
-		height: 15px;
-		margin: 0;
-		padding: 0;
-		border-radius: 4px;
-		border: 1px solid var(--border);
-		background: var(--bg-elevated);
-		cursor: pointer;
-	}
-
-	.cb-input:checked {
-		background: var(--gold);
-		border-color: var(--gold);
-	}
-
-	.cb-check {
-		position: absolute;
-		top: 50%;
-		left: 50%;
-		transform: translate(-50%, -50%);
-		color: oklch(0.2 0.03 80);
-		pointer-events: none;
-	}
 </style>

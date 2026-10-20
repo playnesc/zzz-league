@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { _ } from "$lib/i18n";
 	import type { TournamentGameMode, TournamentRegistrationKind } from "$lib/types";
-	import { renderMarkdown } from "$lib/uiCommon";
+	import { TIERS, renderMarkdown } from "$lib/uiCommon";
 
 	let {
 		name = $bindable(),
@@ -121,8 +121,8 @@
 		<div class="form-group">
 			<label for="f-type">{$_("tournamentFormFields.tournamentTypeLabel")}</label>
 			<select id="f-type" bind:value={tournamentType}>
-				<option value="single elimination">Single elimination</option>
-				<option value="double elimination">Double elimination</option>
+				<option value="single elimination">{$_("common.singleElimination")}</option>
+				<option value="double elimination">{$_("common.doubleElimination")}</option>
 			</select>
 		</div>
 
@@ -170,17 +170,13 @@
 		<div class="form-group">
 			<label for="f-min-tier">{$_("tournamentFormFields.minTierLabel")}</label>
 			<select id="f-min-tier" bind:value={minTier}>
-				<option value="0">NEWBIE</option>
-				<option value="100">MID TIER</option>
-				<option value="1000">HIGH TIER</option>
+				{#each TIERS as t (t.value)}<option value={String(t.value)}>{t.name}</option>{/each}
 			</select>
 		</div>
 		<div class="form-group">
 			<label for="f-max-tier">{$_("tournamentFormFields.maxTierLabel")}</label>
 			<select id="f-max-tier" bind:value={maxTier}>
-				<option value="0">NEWBIE</option>
-				<option value="100">MID TIER</option>
-				<option value="1000">HIGH TIER</option>
+				{#each TIERS as t (t.value)}<option value={String(t.value)}>{t.name}</option>{/each}
 			</select>
 		</div>
 		<div class="form-group">
@@ -340,46 +336,6 @@
 		cursor: pointer;
 	}
 
-	.cb-wrap {
-		position: relative;
-		display: inline-flex;
-		flex-shrink: 0;
-		width: 15px;
-		height: 15px;
-	}
-
-	.cb-input {
-		appearance: none;
-		-webkit-appearance: none;
-		-moz-appearance: none;
-		box-sizing: border-box;
-		flex: 0 0 15px;
-		min-width: 15px;
-		max-width: 15px;
-		width: 15px;
-		height: 15px;
-		margin: 0;
-		padding: 0;
-		border-radius: 4px;
-		border: 1px solid var(--border);
-		background: var(--bg-elevated);
-		cursor: pointer;
-	}
-
-	.cb-input:checked {
-		background: var(--gold);
-		border-color: var(--gold);
-	}
-
-	.cb-check {
-		position: absolute;
-		top: 50%;
-		left: 50%;
-		transform: translate(-50%, -50%);
-		color: oklch(0.2 0.03 80);
-		pointer-events: none;
-	}
-
 	.description-preview {
 		width: 100%;
 		border: 1px dashed var(--border);
@@ -401,5 +357,12 @@
 
 	.form-group input.invalid {
 		border-color: var(--danger);
+	}
+
+	@media (max-width: 640px) {
+		.form-grid,
+		.name-row {
+			grid-template-columns: minmax(0, 1fr);
+		}
 	}
 </style>

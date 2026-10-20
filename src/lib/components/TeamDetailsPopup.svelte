@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { confirmDialog, notify } from "$lib/dialogs";
+	import { modal } from "$lib/actions/modal";
 	import { deleteTeam, listPlayers } from "$lib/backend";
 	import { _ } from "$lib/i18n";
 	import { currentUser, isAdmin } from "$lib/store";
@@ -48,9 +50,7 @@
 	async function handleDelete() {
 		if (deleting || !team) return;
 		if (
-			!confirm(
-				$_("teamDetailsPopup.confirmDelete", { values: { name: team.name } }),
-			)
+			!(await confirmDialog($_("teamDetailsPopup.confirmDelete", { values: { name: team.name } }), { danger: true, confirmLabel: $_("common.delete") }))
 		)
 			return;
 		deleting = true;
@@ -59,7 +59,7 @@
 			onDeleted?.(team.id);
 			open = false;
 		} catch (error: any) {
-			alert(error.message);
+			notify(error);
 		} finally {
 			deleting = false;
 		}
@@ -73,12 +73,8 @@
 </script>
 
 {#if open && team}
-	<!-- svelte-ignore a11y_click_events_have_key_events -->
-	<!-- svelte-ignore a11y_no_static_element_interactions -->
-	<div class="popup" onclick={() => (open = false)}>
-		<!-- svelte-ignore a11y_click_events_have_key_events -->
-		<!-- svelte-ignore a11y_no_static_element_interactions -->
-		<div class="card team-details-card" onclick={(e) => e.stopPropagation()}>
+	<div class="popup">
+		<div class="card team-details-card" use:modal={() => (open = false)}>
 			<div class="close-row">
 				<button class="icon-btn" onclick={() => (open = false)} aria-label={$_("common.close")}>
 					<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
@@ -128,13 +124,6 @@
 		gap: 16px;
 	}
 
-	.close-row {
-		width: 100%;
-		display: flex;
-		justify-content: flex-end;
-		margin-bottom: -8px;
-	}
-
 	.team-logo {
 		width: 64px;
 		height: 64px;
@@ -150,16 +139,6 @@
 		color: var(--text-muted);
 		font-weight: 700;
 		font-size: 18px;
-	}
-
-	.popup-title {
-		font-size: 18px;
-		font-weight: 800;
-		border: none;
-		padding-bottom: 0;
-		margin-bottom: 0;
-		display: block;
-		text-align: center;
 	}
 
 	.member-list {

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { modal } from "$lib/actions/modal";
 	import { resolve } from "$app/paths";
 	import { getAgentAvatar } from "$lib/agentAvatars";
 	import avatarPlaceholder from "$lib/assets/avatar-placeholder.webp";
@@ -37,12 +38,8 @@
 	});
 </script>
 
-<!-- svelte-ignore a11y_click_events_have_key_events -->
-<!-- svelte-ignore a11y_no_static_element_interactions -->
-<div class="popup" onclick={closeProfilePopup}>
-	<!-- svelte-ignore a11y_click_events_have_key_events -->
-	<!-- svelte-ignore a11y_no_static_element_interactions -->
-	<div class="card profile-card" onclick={(e) => e.stopPropagation()}>
+<div class="popup">
+	<div class="card profile-card" use:modal={closeProfilePopup}>
 		<div class="close-row">
 			<button class="icon-btn" onclick={closeProfilePopup} aria-label={$_("common.close")}>
 				<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
@@ -180,12 +177,6 @@
 		padding: 20px 26px 26px;
 		text-align: center;
 		gap: 18px;
-	}
-
-	.close-row {
-		display: flex;
-		justify-content: flex-end;
-		margin-bottom: -8px;
 	}
 
 	.profile-header {

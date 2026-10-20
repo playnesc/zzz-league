@@ -42,11 +42,6 @@
 </div>
 
 <style>
-	.main-content {
-		padding: 24px 28px;
-		gap: 20px;
-	}
-
 	.archive-title {
 		font-size: 20px;
 		padding-bottom: 16px;

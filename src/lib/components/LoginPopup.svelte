@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { modal } from "$lib/actions/modal";
 	import { auth } from "$lib/firebase";
 	import { openDiscordOAuth } from "$lib/discord";
 	import { _ } from "$lib/i18n";
@@ -58,12 +59,8 @@
 	}
 </script>
 
-<!-- svelte-ignore a11y_click_events_have_key_events -->
-<!-- svelte-ignore a11y_no_static_element_interactions -->
-<div class="popup" onclick={close}>
-	<!-- svelte-ignore a11y_click_events_have_key_events -->
-	<!-- svelte-ignore a11y_no_static_element_interactions -->
-	<div class="card login-card" onclick={(e) => e.stopPropagation()}>
+<div class="popup">
+	<div class="card login-card" use:modal={close}>
 		<div class="close-row">
 			<button class="icon-btn" onclick={close} aria-label={$_("common.close")}>
 				<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
@@ -73,12 +70,13 @@
 		{#if resettingPassword}
 			<h1 class="popup-title">{$_("loginPopup.resetPasswordTitle")}</h1>
 			<div class="field-group">
-				<label for="login-reset-email">Email</label>
+				<label for="login-reset-email">{$_("loginPopup.emailLabel")}</label>
 				<input
 					id="login-reset-email"
-					type="text"
+					type="email"
+					autocomplete="email"
 					bind:value={email}
-					placeholder="Email"
+					placeholder={$_("loginPopup.emailLabel")}
 				/>
 			</div>
 
@@ -87,9 +85,10 @@
 				class="btn-common btn-play"
 				onclick={() => handleResetPassword()}>{$_("loginPopup.sendCode")}</button
 			>
-			<button class="btn-reset-password" onclick={() => backFromReset()}
-				>← {$_("loginPopup.backToLogin")}</button
-			>
+			<button class="btn-reset-password" onclick={() => backFromReset()}>
+				<svg aria-hidden="true" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+				{$_("loginPopup.backToLogin")}
+			</button>
 		{:else}
 			<h1 class="popup-title">{$_("loginPopup.title")}</h1>
 			<button class="btn-common btn-discord" onclick={handleDiscordLogin}>
@@ -98,12 +97,13 @@
 			</button>
 			<p class="login-divider">{$_("loginPopup.orByEmail")}</p>
 			<div class="field-group">
-				<label for="login-email">Email</label>
+				<label for="login-email">{$_("loginPopup.emailLabel")}</label>
 				<input
 					id="login-email"
-					type="text"
+					type="email"
+					autocomplete="username"
 					bind:value={email}
-					placeholder="Email"
+					placeholder={$_("loginPopup.emailLabel")}
 				/>
 			</div>
 			<div class="field-group">
@@ -111,6 +111,7 @@
 				<input
 					id="login-password"
 					type="password"
+					autocomplete="current-password"
 					bind:value={password}
 					placeholder={$_("loginPopup.passwordLabel")}
 					onkeydown={(e) => e.key === "Enter" && handleLogin()}
@@ -137,27 +138,35 @@
 		gap: 14px;
 	}
 
-	.close-row {
-		display: flex;
-		justify-content: flex-end;
-		margin-bottom: -10px;
-	}
-
-	.popup-title {
-		font-size: 18px;
-		font-weight: 800;
-		text-align: center;
-		margin-bottom: 0;
-	}
-
 	.btn-discord {
-		background: oklch(0.56 0.16 280);
-		color: #fff;
-		border-color: oklch(0.56 0.16 280);
+		--btn-fg: white;
+		background: var(--discord);
+		color: white;
+		border-color: var(--discord);
 	}
 
 	.btn-discord:hover {
-		background: oklch(0.62 0.16 280);
+		background: var(--discord-hover);
+	}
+
+	.btn-reset-password {
+		all: unset;
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		cursor: pointer;
+		align-self: center;
+		color: var(--text-muted);
+	}
+
+	.btn-reset-password:hover {
+		color: var(--text);
+	}
+
+	.login-divider {
+		text-align: center;
+		color: var(--text-muted);
+		margin: 4px 0;
 	}
 
 	.field-group {

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { confirmDialog, notify } from "$lib/dialogs";
 	import { goto } from "$app/navigation";
 	import { resolve } from "$app/paths";
 	import { page } from "$app/state";
@@ -9,8 +10,7 @@
 	import TournamentPlayerTable from "$lib/components/TournamentPlayerTable.svelte";
 	import TournamentTeamTable from "$lib/components/TournamentTeamTable.svelte";
 	import TournamentRegisterPopup from "$lib/components/TournamentRegistrationPopup.svelte";
-	import TournamentAddPlayerPopup from "$lib/components/TournamentAddPlayerPopup.svelte";
-	import TournamentAddTeamPopup from "$lib/components/TournamentAddTeamPopup.svelte";
+	import TournamentAddEntryPopup from "$lib/components/TournamentAddEntryPopup.svelte";
 	import TeamDetailsPopup from "$lib/components/TeamDetailsPopup.svelte";
 	import { _, locale, formatDate } from "$lib/i18n";
 	import {
@@ -55,7 +55,10 @@
 		isRegistrationOpen,
 		isRegistrationWindowOpen,
 		playerTierValue,
+		STATUS_TONE,
+		getTournamentStatus,
 	} from "$lib/tournamentState";
+	import TierBadge from "$lib/components/TierBadge.svelte";
 	import { dateDisplayOptions, renderMarkdown } from "$lib/uiCommon";
 	import { capDefaultHeight } from "$lib/actions/capDefaultHeight";
 	import { onMount } from "svelte";
@@ -64,6 +67,7 @@
 
 	let now = $state(Date.now());
 	let tournament = $state<Tournament>();
+	let loadState = $state<"loading" | "ready" | "missing">("loading");
 	let matches = $state<TournamentMatch[]>([]);
 	let userRegistration = $state<TournamentRegistration | null>();
 	let userPlayer1 = $state<PlayerListItem | undefined>();
@@ -215,22 +219,21 @@
 				now,
 			),
 	);
-	// Presentational only — recombines the mutually-exclusive state checks above (per
-	// tournamentState.ts, `state` is a single enum value) into one status pill instead of a stack
-	// of separate paragraphs.
+	// Same status as the tournament cards (see getTournamentStatus), labelled for the page header.
 	let statusPill = $derived.by(() => {
 		if (!tournament) return null;
-		if (registrationWindowOpen)
-			return { text: $_("pageTournamentDetail.statusRegistrationOpen"), cls: "pill-success" };
-		if (isRegistrationClosed(tournament.state))
-			return { text: $_("pageTournamentDetail.statusRegistrationClosed"), cls: "pill-neutral" };
-		if (isBracketCreated(tournament.state))
-			return { text: $_("pageTournamentDetail.statusBracketCreated"), cls: "pill-info" };
-		if (tournament.state === TOURNAMENT_STATE.STARTED)
-			return { text: $_("pageTournamentDetail.statusOngoing"), cls: "pill-gold" };
-		if (tournament.state === TOURNAMENT_STATE.COMPLETE)
-			return { text: $_("pageTournamentDetail.statusComplete"), cls: "pill-neutral" };
-		return null;
+		const status = getTournamentStatus(tournament, now);
+		const text = {
+			upcoming: $_("tournamentCard.registrationOpens", {
+				values: { date: formatDate(new Date(tournament.registrationStartDate), dateDisplayOptions, $locale) },
+			}),
+			registration: $_("pageTournamentDetail.statusRegistrationOpen"),
+			registration_closed: $_("pageTournamentDetail.statusRegistrationClosed"),
+			bracket_created: $_("pageTournamentDetail.statusBracketCreated"),
+			ongoing: $_("pageTournamentDetail.statusOngoing"),
+			complete: $_("pageTournamentDetail.statusComplete"),
+		}[status];
+		return { text, tone: STATUS_TONE[status] };
 	});
 	let canCancelRegistration = $derived(
 		!!tournament && !isLocked(tournament.state) && !tournament.challongeTournamentId,
@@ -245,19 +248,21 @@
 	);
 
 	// Shared by every admin action button below: optional confirm dialog, a loading flag toggled
-	// around the call, and an alert() on failure — the only thing each handler varies is which flag,
+	// around the call, and an error toast on failure — the only thing each handler varies is which flag,
 	// which confirm message (if any), and which API call to make.
 	async function runAction(
 		setLoading: (loading: boolean) => void,
 		action: () => Promise<unknown>,
 		confirmMessage?: string,
+		danger = false,
+		confirmLabel?: string,
 	) {
-		if (confirmMessage && !confirm(confirmMessage)) return;
+		if (confirmMessage && !(await confirmDialog(confirmMessage, { danger, confirmLabel }))) return;
 		setLoading(true);
 		try {
 			await action();
 		} catch (error) {
-			alert(error);
+			notify(error);
 		} finally {
 			setLoading(false);
 		}
@@ -270,6 +275,8 @@
 			(v) => (cancellingRegistration = v),
 			() => cancelTournamentRegistration(tournament!.id),
 			$_("pageTournamentDetail.confirmCancelRegistration"),
+			true,
+			$_("pageTournamentDetail.cancelRegistrationButton"),
 		);
 	}
 
@@ -280,6 +287,8 @@
 			(v) => (closingRegistration = v),
 			() => closeTournamentRegistration(tournament!.id),
 			$_("pageTournamentDetail.confirmCloseRegistration"),
+			false,
+			$_("pageTournamentDetail.closeRegistrationButton"),
 		);
 	}
 
@@ -290,6 +299,8 @@
 			(v) => (creatingBracket = v),
 			() => createChallongeBracket(tournament!.id),
 			$_("pageTournamentDetail.confirmCreateBracket"),
+			false,
+			$_("pageTournamentDetail.createBracketButton"),
 		);
 	}
 
@@ -312,6 +323,8 @@
 			(v) => (finishingTournament = v),
 			() => finishTournament(tournament!.id),
 			$_("pageTournamentDetail.confirmFinishTournament"),
+			false,
+			$_("pageTournamentDetail.finishTournamentButton"),
 		);
 	}
 
@@ -345,6 +358,8 @@
 				await goto(resolve("/tournaments"));
 			},
 			$_("pageTournamentDetail.confirmDeleteTournament", { values: { name: tournament.name } }),
+			true,
+			$_("common.delete"),
 		);
 	}
 
@@ -433,8 +448,16 @@
 		let cancelled = false;
 
 		async function loadTournament() {
-			const loaded = await getTournament(tournamentId);
-			if (!cancelled) tournament = loaded ?? undefined;
+			try {
+				const loaded = await getTournament(tournamentId);
+				if (cancelled) return;
+				tournament = loaded ?? undefined;
+				loadState = loaded ? "ready" : "missing";
+			} catch (error) {
+				if (cancelled) return;
+				if (!tournament) loadState = "missing";
+				notify(error);
+			}
 		}
 
 		async function loadMatches() {
@@ -522,23 +545,9 @@
 			<div class="tournament-header">
 				<div class="tournament-title-row">
 					<h2>{tournament.name}</h2>
-					{#snippet tierBadge(tier: number)}
-						{#if tier === 0}
-							<span class="tier-badge t-newbie">NEWBIE</span>
-						{:else if tier === 100}
-							<span class="tier-badge t-mid">MID TIER</span>
-						{:else if tier === 1000}
-							<span class="tier-badge t-high">HIGH TIER</span>
-						{/if}
-					{/snippet}
-					{#if tournament.minTier === tournament.maxTier}
-						{@render tierBadge(tournament.minTier)}
-					{:else}
-						{@render tierBadge(tournament.minTier)}<span class="tier-range-sep">–</span
-						>{@render tierBadge(tournament.maxTier)}
-					{/if}
+					<TierBadge tier={tournament.minTier} max={tournament.maxTier} />
 					{#if statusPill}
-						<span class="pill {statusPill.cls}">{statusPill.text}</span>
+						<span class="status-pill tone-{statusPill.tone}">{statusPill.text}</span>
 					{/if}
 				</div>
 
@@ -548,6 +557,25 @@
 							values: { index: tournament.divisionIndex },
 						})}
 					</p>
+				{/if}
+
+				{#if tournament.winnerId || tournament.winnerTeamId}
+					<div class="winner-banner">
+						<div class="winner-badge-info">
+							<div class="winner-icon">
+								<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 21h8"/><path d="M12 17v4"/><path d="M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M7 5H4a1 1 0 0 0-1 1 5 5 0 0 0 4 4.9"/><path d="M17 5h3a1 1 0 0 1 1 1 5 5 0 0 1-4 4.9"/></svg>
+							</div>
+							<div class="winner-eyebrow">{$_("pageTournamentDetail.championLabel")}</div>
+						</div>
+						<div class="winner-who">
+							{#if getMatchSideAvatarSrc(tournament.winnerId, tournament.winnerTeamId)}
+								<img class="winner-avatar" src={getMatchSideAvatarSrc(tournament.winnerId, tournament.winnerTeamId)} alt="" />
+							{/if}
+							<div class="winner-name">
+								{tournament.winnerId ? getPlayerName(tournament.winnerId) : getTeamLabel(tournament.winnerTeamId)}
+							</div>
+						</div>
+					</div>
 				{/if}
 
 				{#if tournament.description}
@@ -573,7 +601,11 @@
 					</div>
 					<div class="spec">
 						<span class="spec-label">{$_("pageTournamentDetail.specSystem")}</span>
-						<span class="spec-value">{tournament.type}</span>
+						<span class="spec-value"
+							>{tournament.type === "double elimination"
+								? $_("common.doubleElimination")
+								: $_("common.singleElimination")}</span
+						>
 					</div>
 					<div class="spec">
 						<span class="spec-label">{$_("pageTournamentDetail.specCostRange")}</span>
@@ -605,173 +637,46 @@
 				</div>
 			</div>
 
-			{#if $isAdmin || hasUserActions}
-				<div class="tournament-actions">
-					{#if $isAdmin}
-						<div class="actions-admin">
-							<button
-								class="btn-common btn-danger-ghost"
-								class:btn-loading={deletingTournament}
-								onclick={handleDeleteTournament}
-								>{$_("pageTournamentDetail.deleteTournamentButton")}</button
-							>
-							{#if !isLocked(tournament.state)}
-								<a
-									class="btn-common"
-									href={resolve(`/tournaments/${tournament.id}/edit`)}
-									>{$_("pageTournamentDetail.editTournamentButton")}</a
-								>
-								{#if tournament.registrationType === "team"}
-									<button
-										class="btn-common"
-										onclick={() => (addTeamPopupOpen = true)}
-										>{$_("pageTournamentDetail.addTeamButton")}</button
-									>
-								{:else}
-									<button
-										class="btn-common"
-										onclick={() => (addPlayerPopupOpen = true)}
-										>{$_("pageTournamentDetail.addPlayerButton")}</button
-									>
-								{/if}
-								{#if isRegistrationOpen(tournament.state)}
-									<button
-										class="btn-common"
-										class:btn-loading={closingRegistration}
-										onclick={handleCloseRegistration}
-										>{$_("pageTournamentDetail.closeRegistrationButton")}</button
-									>
-								{/if}
-								{#if !tournament.divisionGroupId}
-									<a
-										class="btn-common"
-										href={resolve(`/tournaments/${tournament.id}/split`)}
-										>{$_("pageTournamentDetail.splitIntoGroupsButton")}</a
-									>
-								{/if}
-								<button
-									class="btn-common btn-play"
-									class:btn-loading={creatingBracket}
-									onclick={handleCreateBracket}
-									>{$_("pageTournamentDetail.createBracketButton")}</button
-								>
-							{/if}
-							{#if isBracketCreated(tournament.state)}
-								<a
-									class="btn-common"
-									href={tournament.challongeTournamentUrl}
-									target="_blank"
-									rel="noopener noreferrer">{$_("pageTournamentDetail.openInChallongeButton")}</a
-								>
-								<button
-									class="btn-common btn-play"
-									class:btn-loading={startingTournament}
-									onclick={handleStartTournament}
-									>{$_("pageTournamentDetail.startTournamentButton")}</button
-								>
-							{/if}
-							{#if tournament.state === TOURNAMENT_STATE.STARTED}
-								<button
-									class="btn-common btn-play"
-									class:btn-loading={updatingGames}
-									onclick={handleUpdateTournamentGames}
-									>{$_("pageTournamentDetail.forceUpdateGamesButton")}</button
-								>
-							{/if}
-							{#if tournament.state === TOURNAMENT_STATE.AWAITING_REVIEW}
-								<button
-									class="btn-common btn-play"
-									class:btn-loading={finishingTournament}
-									onclick={handleFinishTournament}
-									>{$_("pageTournamentDetail.finishTournamentButton")}</button
-								>
-							{/if}
-						</div>
+			{#if hasUserActions}
+				<div class="actions-user">
+					{#if registrationWindowOpen && (tournament.registrationType === "team" || tierEligible)}
+						<a
+							class="btn-common btn-play"
+							href={resolve(
+								tournament.registrationType === "team"
+									? `/tournaments/${tournament.id}/register-team`
+									: `/tournaments/${tournament.id}/register`,
+							)}
+							>{#if myRegistration}{$_(
+									"pageTournamentDetail.updateRegistrationButton",
+								)}{:else}{$_("pageTournamentDetail.registerButton")}{/if}</a
+						>
 					{/if}
-					{#if hasUserActions}
-						<div class="actions-user">
-							{#if registrationWindowOpen && (tournament.registrationType === "team" || tierEligible)}
-								<a
-									class="btn-common btn-play"
-									href={resolve(
-										tournament.registrationType === "team"
-											? `/tournaments/${tournament.id}/register-team`
-											: `/tournaments/${tournament.id}/register`,
-									)}
-									>{#if myRegistration}{$_(
-											"pageTournamentDetail.updateRegistrationButton",
-										)}{:else}{$_("pageTournamentDetail.registerButton")}{/if}</a
-								>
-							{/if}
-							{#if myRegistration}
-								<button
-									class="btn-common"
-									onclick={() => openRegistrationRecord(myRegistration)}
-									>{$_("pageTournamentDetail.myRegistrationButton")}</button
-								>
-							{/if}
-							{#if myRegistration && canCancelRegistration}
-								<button
-									class="btn-common btn-danger-ghost"
-									class:btn-loading={cancellingRegistration}
-									onclick={handleCancelRegistration}
-									>{$_("pageTournamentDetail.cancelRegistrationButton")}</button
-								>
-							{/if}
-						</div>
+					{#if myRegistration}
+						<button
+							class="btn-common"
+							onclick={() => openRegistrationRecord(myRegistration)}
+							>{$_("pageTournamentDetail.myRegistrationButton")}</button
+						>
 					{/if}
-				</div>
-			{/if}
-
-			{#if tournament.winnerId || tournament.winnerTeamId}
-				<div class="winner-banner">
-					<div class="winner-badge-info">
-						<div class="winner-icon">
-							<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 21h8"/><path d="M12 17v4"/><path d="M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M7 5H4a1 1 0 0 0-1 1 5 5 0 0 0 4 4.9"/><path d="M17 5h3a1 1 0 0 1 1 1 5 5 0 0 1-4 4.9"/></svg>
-						</div>
-						<div class="winner-eyebrow">{$_("pageTournamentDetail.championLabel")}</div>
-					</div>
-					<div class="winner-who">
-						{#if getMatchSideAvatarSrc(tournament.winnerId, tournament.winnerTeamId)}
-							<img class="winner-avatar" src={getMatchSideAvatarSrc(tournament.winnerId, tournament.winnerTeamId)} alt="" />
-						{/if}
-						<div class="winner-name">
-							{tournament.winnerId ? getPlayerName(tournament.winnerId) : getTeamLabel(tournament.winnerTeamId)}
-						</div>
-					</div>
+					{#if myRegistration && canCancelRegistration}
+						<button
+							class="btn-common btn-danger-ghost"
+							class:btn-loading={cancellingRegistration}
+							onclick={handleCancelRegistration}
+							>{$_("pageTournamentDetail.cancelRegistrationButton")}</button
+						>
+					{/if}
 				</div>
 			{/if}
 
 			{#if tournament.challongeTournamentUrl && hasTournamentStarted(tournament.state)}
-				<!-- svelte-ignore a11y_click_events_have_key_events -->
-				<!-- svelte-ignore a11y_no_static_element_interactions -->
-				<div
-					class="collapsible-header"
-					onclick={() => (bracketExpanded = !bracketExpanded)}
-				>
-					<h2>{$_("pageTournamentDetail.bracketHeading")}</h2>
-					<span class="collapse-arrow-wrapper">
-						<span class="collapse-label"
-							>{bracketExpanded
-								? $_("pageTournamentDetail.collapseLabel")
-								: $_("pageTournamentDetail.expandLabel")}</span
-						>
-						<svg
-							class="collapse-arrow"
-							class:collapsed={!bracketExpanded}
-							width="16"
-							height="16"
-							viewBox="0 0 24 24"
-							fill="none"
-							stroke="currentColor"
-							stroke-width="2"
-							stroke-linecap="round"
-							stroke-linejoin="round"
-						>
-							<polyline points="6 9 12 15 18 9"></polyline>
-						</svg>
-					</span>
-				</div>
+				<h2 class="collapsible-heading">
+					<button type="button" class="collapsible-header" aria-expanded={bracketExpanded} onclick={() => (bracketExpanded = !bracketExpanded)}>
+						<span>{$_("pageTournamentDetail.bracketHeading")}</span>
+						<svg class="collapse-arrow" class:collapsed={!bracketExpanded} aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+					</button>
+				</h2>
 				{#if bracketExpanded}
 					<div
 						class="bracket-resizable"
@@ -795,35 +700,12 @@
 			{/if}
 
 			{#if matches.length > 0}
-				<!-- svelte-ignore a11y_click_events_have_key_events -->
-				<!-- svelte-ignore a11y_no_static_element_interactions -->
-				<div
-					class="collapsible-header"
-					onclick={() => (matchesExpanded = !matchesExpanded)}
-				>
-					<h2>{$_("pageTournamentDetail.gamesHeading")}</h2>
-					<span class="collapse-arrow-wrapper">
-						<span class="collapse-label"
-							>{matchesExpanded
-								? $_("pageTournamentDetail.collapseLabel")
-								: $_("pageTournamentDetail.expandLabel")}</span
-						>
-						<svg
-							class="collapse-arrow"
-							class:collapsed={!matchesExpanded}
-							width="16"
-							height="16"
-							viewBox="0 0 24 24"
-							fill="none"
-							stroke="currentColor"
-							stroke-width="2"
-							stroke-linecap="round"
-							stroke-linejoin="round"
-						>
-							<polyline points="6 9 12 15 18 9"></polyline>
-						</svg>
-					</span>
-				</div>
+				<h2 class="collapsible-heading">
+					<button type="button" class="collapsible-header" aria-expanded={matchesExpanded} onclick={() => (matchesExpanded = !matchesExpanded)}>
+						<span>{$_("pageTournamentDetail.gamesHeading")}</span>
+						<svg class="collapse-arrow" class:collapsed={!matchesExpanded} aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+					</button>
+				</h2>
 				{#if matchesExpanded}
 					<div class="match-filters">
 						<label class="match-filter-toggle">
@@ -892,9 +774,18 @@
 								!!match.resultP2}
 							{@const p1Avatar = getMatchSideAvatarSrc(match.p1, match.p1TeamId)}
 							{@const p2Avatar = getMatchSideAvatarSrc(match.p2, match.p2TeamId)}
-							<!-- svelte-ignore a11y_click_events_have_key_events -->
-							<!-- svelte-ignore a11y_no_static_element_interactions -->
-							<div class="match-item" onclick={() => openMatch(match)}>
+							<div class="match-item">
+								<button
+									type="button"
+									class="match-open"
+									aria-label={$_("pageTournamentDetail.openMatchLabel", {
+										values: {
+											p1: getMatchSideLabel(match.p1, match.p1TeamId),
+											p2: getMatchSideLabel(match.p2, match.p2TeamId),
+										},
+									})}
+									onclick={() => openMatch(match)}
+								></button>
 								<div class="match-side">
 									<span
 										class="match-avatar {p1Class}"
@@ -902,9 +793,8 @@
 											? `url(${p1Avatar})`
 											: `url(${avatarPlaceholder})`}"
 									></span>
-									<!-- svelte-ignore a11y_click_events_have_key_events -->
-									<!-- svelte-ignore a11y_no_static_element_interactions -->
-									<span
+									<button
+										type="button"
 										class="match-player-name hover-emphasis {p1Class} {match.p1 === $currentUser?.uid
 											? 'match-player-self'
 											: ''}"
@@ -917,7 +807,7 @@
 										>{getMatchSideLabel(
 											match.p1,
 											match.p1TeamId,
-										)}</span
+										)}</button
 									>
 								</div>
 								{#if hasResult}
@@ -930,12 +820,11 @@
 										>
 									</span>
 								{:else}
-									<span class="match-vs">vs</span>
+									<span class="match-vs">{$_("common.versus")}</span>
 								{/if}
 								<div class="match-side match-side-right">
-									<!-- svelte-ignore a11y_click_events_have_key_events -->
-									<!-- svelte-ignore a11y_no_static_element_interactions -->
-									<span
+									<button
+										type="button"
 										class="match-player-name hover-emphasis {p2Class} {match.p2 === $currentUser?.uid
 											? 'match-player-self'
 											: ''}"
@@ -948,7 +837,7 @@
 										>{getMatchSideLabel(
 											match.p2,
 											match.p2TeamId,
-										)}</span
+										)}</button
 									>
 									<span
 										class="match-avatar {p2Class}"
@@ -1004,6 +893,104 @@
 					/>
 				{/if}
 			</div>
+
+			{#if $isAdmin}
+				<details class="admin-section" open>
+					<summary class="collapsible-header">
+						<h2>{$_("pageTournamentDetail.adminToolsHeading")}</h2>
+						<svg class="collapse-arrow" aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+					</summary>
+					<div class="actions-admin">
+						{#if !isLocked(tournament.state)}
+							<a
+								class="btn-common"
+								href={resolve(`/tournaments/${tournament.id}/edit`)}
+								>{$_("pageTournamentDetail.editTournamentButton")}</a
+							>
+							{#if tournament.registrationType === "team"}
+								<button
+									class="btn-common"
+									onclick={() => (addTeamPopupOpen = true)}
+									>{$_("pageTournamentDetail.addTeamButton")}</button
+								>
+							{:else}
+								<button
+									class="btn-common"
+									onclick={() => (addPlayerPopupOpen = true)}
+									>{$_("pageTournamentDetail.addPlayerButton")}</button
+								>
+							{/if}
+							{#if isRegistrationOpen(tournament.state)}
+								<button
+									class="btn-common"
+									class:btn-loading={closingRegistration}
+									onclick={handleCloseRegistration}
+									>{$_("pageTournamentDetail.closeRegistrationButton")}</button
+								>
+							{/if}
+							{#if !tournament.divisionGroupId}
+								<a
+									class="btn-common"
+									href={resolve(`/tournaments/${tournament.id}/split`)}
+									>{$_("pageTournamentDetail.splitIntoGroupsButton")}</a
+								>
+							{/if}
+							<button
+								class="btn-common btn-play"
+								class:btn-loading={creatingBracket}
+								onclick={handleCreateBracket}
+								>{$_("pageTournamentDetail.createBracketButton")}</button
+							>
+						{/if}
+						{#if isBracketCreated(tournament.state)}
+							<a
+								class="btn-common"
+								href={tournament.challongeTournamentUrl}
+								target="_blank"
+								rel="noopener noreferrer">{$_("pageTournamentDetail.openInChallongeButton")}</a
+							>
+							<button
+								class="btn-common btn-play"
+								class:btn-loading={startingTournament}
+								onclick={handleStartTournament}
+								>{$_("pageTournamentDetail.startTournamentButton")}</button
+							>
+						{/if}
+						{#if tournament.state === TOURNAMENT_STATE.STARTED}
+							<button
+								class="btn-common"
+								class:btn-loading={updatingGames}
+								onclick={handleUpdateTournamentGames}
+								>{$_("pageTournamentDetail.forceUpdateGamesButton")}</button
+							>
+						{/if}
+						{#if tournament.state === TOURNAMENT_STATE.AWAITING_REVIEW}
+							<button
+								class="btn-common btn-play"
+								class:btn-loading={finishingTournament}
+								onclick={handleFinishTournament}
+								>{$_("pageTournamentDetail.finishTournamentButton")}</button
+							>
+						{/if}
+					</div>
+					<div class="danger-zone">
+						<div class="danger-zone-text">
+							<span class="danger-zone-title">{$_("pageTournamentDetail.deleteTournamentButton")}</span>
+							<span class="danger-zone-hint">{$_("pageTournamentDetail.deleteTournamentHint")}</span>
+						</div>
+						<button
+							class="btn-common btn-danger-ghost"
+							class:btn-loading={deletingTournament}
+							onclick={handleDeleteTournament}
+							>{$_("pageTournamentDetail.deleteTournamentButton")}</button
+						>
+					</div>
+				</details>
+			{/if}
+		{:else if loadState === "missing"}
+			<p class="notice">{$_("pageTournamentDetail.notFound")}</p>
+		{:else}
+			<p class="notice">{$_("common.loading")}</p>
 		{/if}
 	</div>
 </div>
@@ -1027,18 +1014,15 @@
 	></TournamentGamePopup>
 {/if}
 {#if addPlayerPopupOpen}
-	<TournamentAddPlayerPopup
+	<TournamentAddEntryPopup
+		kind="player"
 		bind:open={addPlayerPopupOpen}
 		{tournament}
-		registeredUids={registeredPlayers.map((p) => p.player.uid)}
-	></TournamentAddPlayerPopup>
+		excludeIds={registeredPlayers.map((p) => p.player.uid)}
+	/>
 {/if}
 {#if addTeamPopupOpen}
-	<TournamentAddTeamPopup
-		bind:open={addTeamPopupOpen}
-		{tournament}
-		{registeredTeamIds}
-	></TournamentAddTeamPopup>
+	<TournamentAddEntryPopup kind="team" bind:open={addTeamPopupOpen} {tournament} excludeIds={registeredTeamIds} />
 {/if}
 <TeamDetailsPopup bind:open={teamDetailsOpen} team={selectedTeam} />
 
@@ -1059,7 +1043,10 @@
 		border: none;
 	}
 
+	/* The whole row opens the match (an invisible full-size button underneath); player names
+	   sit above it as their own buttons. */
 	.match-item {
+		position: relative;
 		display: flex;
 		align-items: center;
 		gap: 14px;
@@ -1067,7 +1054,6 @@
 		background: var(--surface-2);
 		border: 1px solid var(--border-soft);
 		border-radius: var(--r-md);
-		cursor: pointer;
 		transition: 0.15s;
 	}
 
@@ -1075,12 +1061,42 @@
 		border-color: var(--gold-border);
 	}
 
+	.match-open {
+		position: absolute;
+		inset: 0;
+		z-index: 0;
+		padding: 0;
+		background: none;
+		border: none;
+		border-radius: inherit;
+		cursor: pointer;
+	}
+
+	.match-item .match-side {
+		position: relative;
+		z-index: 1;
+		pointer-events: none;
+	}
+
+	button.match-player-name {
+		pointer-events: auto;
+		padding: 0;
+		background: none;
+		border: none;
+		font: inherit;
+		text-align: inherit;
+		cursor: pointer;
+		min-width: 0;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
 	.no-matches {
 		display: block;
 		text-align: center;
-		font-size: 16px;
-		color: var(--text-dim);
-		padding: 0;
+		color: var(--text-muted);
+		padding: 12px 0;
 	}
 
 	.match-side {
@@ -1158,9 +1174,10 @@
 
 	.match-filters {
 		display: flex;
+		flex-wrap: wrap;
 		justify-content: flex-end;
 		align-items: center;
-		gap: 20px;
+		gap: 10px 20px;
 		width: 100%;
 		margin-bottom: 16px;
 	}
@@ -1169,36 +1186,69 @@
 		width: 160px;
 	}
 
+	@media (max-width: 640px) {
+		.match-filters {
+			justify-content: flex-start;
+		}
+
+		.match-filters .search-input {
+			width: 100%;
+		}
+
+		.spec-grid {
+			grid-template-columns: repeat(2, minmax(0, 1fr));
+		}
+
+		/* names need the room more than the avatars do */
+		.match-item {
+			gap: 8px;
+			padding: 10px 12px;
+		}
+
+		.match-avatar {
+			display: none;
+		}
+	}
+
 	.collapsible-header {
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
+		width: 100%;
+		background: none;
+		border: none;
+		border-bottom: 1px solid var(--border-soft);
+		padding: 0 0 10px;
+		color: inherit;
+		text-align: left;
 		cursor: pointer;
 		user-select: none;
-		padding-bottom: 10px;
-		border-bottom: 1px solid var(--border-soft);
+		list-style: none;
 	}
 
+	.collapsible-header::-webkit-details-marker {
+		display: none;
+	}
+
+	.collapsible-heading,
 	.collapsible-header h2 {
 		border: none;
 		padding: 0;
 		margin: 0;
 	}
 
-	.collapse-arrow-wrapper {
-		display: flex;
-		align-items: center;
-		gap: 8px;
-	}
-
-	.collapse-label {
-		color: var(--text-dim);
-		font-size: 12px;
+	button.collapsible-header {
+		font: inherit;
 	}
 
 	.collapse-arrow {
-		color: var(--text-dim);
+		flex-shrink: 0;
+		color: var(--text-muted);
 		transition: transform 0.15s ease;
+	}
+
+	.admin-section:not([open]) .collapse-arrow {
+		transform: rotate(-90deg);
 	}
 
 	.collapse-arrow.collapsed {
@@ -1216,46 +1266,6 @@
 
 	.match-filter-toggle p {
 		white-space: nowrap;
-	}
-
-	.cb-wrap {
-		position: relative;
-		display: inline-flex;
-		flex-shrink: 0;
-		width: 15px;
-		height: 15px;
-	}
-
-	.cb-input {
-		appearance: none;
-		-webkit-appearance: none;
-		-moz-appearance: none;
-		box-sizing: border-box;
-		flex: 0 0 15px;
-		min-width: 15px;
-		max-width: 15px;
-		width: 15px;
-		height: 15px;
-		margin: 0;
-		padding: 0;
-		border-radius: 4px;
-		border: 1px solid var(--border);
-		background: var(--bg-elevated);
-		cursor: pointer;
-	}
-
-	.cb-input:checked {
-		background: var(--gold);
-		border-color: var(--gold);
-	}
-
-	.cb-check {
-		position: absolute;
-		top: 50%;
-		left: 50%;
-		transform: translate(-50%, -50%);
-		color: oklch(0.2 0.03 80);
-		pointer-events: none;
 	}
 
 	.tournament-header {
@@ -1280,40 +1290,6 @@
 		margin: 0;
 	}
 
-	.tier-range-sep {
-		color: var(--text-dim);
-	}
-
-	.pill {
-		display: inline-flex;
-		align-items: center;
-		gap: 5px;
-		padding: 3px 9px;
-		border-radius: 999px;
-		font-size: 10px;
-		font-weight: 700;
-	}
-
-	.pill-success {
-		background: var(--success-dim);
-		color: var(--success);
-	}
-
-	.pill-info {
-		background: var(--info-dim);
-		color: var(--info);
-	}
-
-	.pill-gold {
-		background: var(--gold-dim);
-		color: var(--gold);
-	}
-
-	.pill-neutral {
-		background: var(--surface-2);
-		color: var(--text-dim);
-	}
-
 	.division-note {
 		color: var(--text-dim);
 		font-size: 12px;
@@ -1322,7 +1298,7 @@
 
 	.spec-grid {
 		display: grid;
-		grid-template-columns: repeat(3, 1fr);
+		grid-template-columns: repeat(3, minmax(0, 1fr));
 		gap: 14px 20px;
 	}
 
@@ -1362,31 +1338,55 @@
 		color: var(--text-muted);
 	}
 
-	.tournament-actions {
+	.actions-user {
 		display: flex;
-		align-items: stretch;
-		gap: 28px;
 		flex-wrap: wrap;
-		padding-bottom: 20px;
-		border-bottom: 1px solid var(--border-soft);
+		gap: 8px;
+	}
+
+	.admin-section {
+		display: flex;
+		flex-direction: column;
+		gap: 14px;
+		margin-top: 8px;
+	}
+
+	.admin-section[open] > summary {
+		margin-bottom: 14px;
 	}
 
 	.actions-admin {
-		display: grid;
-		grid-template-columns: repeat(2, minmax(150px, 1fr));
+		display: flex;
+		flex-wrap: wrap;
 		gap: 8px;
 	}
 
-	.actions-user {
+	.danger-zone {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 12px 16px;
+		flex-wrap: wrap;
+		margin-top: 14px;
+		padding: 14px 16px;
+		border: 1px solid var(--danger-border);
+		border-radius: var(--r-md);
+	}
+
+	.danger-zone-text {
 		display: flex;
 		flex-direction: column;
-		gap: 8px;
-		margin-left: auto;
+		gap: 2px;
+		min-width: 0;
 	}
 
-	.actions-admin + .actions-user {
-		padding-left: 28px;
-		border-left: 1px solid var(--border-soft);
+	.danger-zone-title {
+		font-weight: 700;
+	}
+
+	.danger-zone-hint {
+		font-size: var(--fs-sm);
+		color: var(--text-muted);
 	}
 
 	.description-text :global(a) {
@@ -1402,7 +1402,7 @@
 	.winner-banner {
 		background: var(--surface);
 		border: 1px solid var(--border-soft);
-		border-left: var(--r-lg) solid var(--gold);
+		border-left: 4px solid var(--gold);
 		border-radius: var(--r-lg);
 		padding: 16px 24px;
 		display: flex;
@@ -1431,11 +1431,9 @@
 	}
 
 	.winner-eyebrow {
-		font-size: 12px;
-		font-weight: 700;
-		color: var(--text);
-		letter-spacing: 0.03em;
-		text-transform: uppercase;
+		font-size: var(--fs-md);
+		font-weight: 600;
+		color: var(--text-muted);
 	}
 
 	.winner-who {

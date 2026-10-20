@@ -8,7 +8,7 @@
 	--border-soft: oklch(0.270 0.006 95);
 	--text: oklch(0.94 0.003 95);
 	--text-muted: oklch(0.68 0.005 95);
-	--text-dim: oklch(0.50 0.005 95);
+	--text-dim: oklch(0.61 0.005 95);
 
 	--gold: oklch(0.80 0.145 90);
 	--gold-strong: oklch(0.86 0.150 92);
@@ -38,17 +38,53 @@
 	--tier-high-bg: oklch(0.680 0.170 24 / 0.14);
 	--tier-high-text: oklch(0.680 0.170 24);
 
+	--success-hover: oklch(0.70 0.140 150 / 0.22);
+
+	/* text on a gold fill (primary buttons, checked checkboxes) */
+	--on-gold: oklch(0.20 0.03 80);
+
+	--overlay: oklch(0.10 0.005 95 / 0.6);
+	--overlay-strong: oklch(0.08 0.005 95 / 0.85);
+
+	--on-danger: oklch(0.99 0 0);
+	--shadow-pop: 0 8px 24px oklch(0 0 0 / 0.45);
+
+	--discord: oklch(0.56 0.16 280);
+	--discord-hover: oklch(0.62 0.16 280);
+
+	/* categorical palette for cost columns (M0–M6 / R1–R5), shared by both cost tables */
+	--cost-0-bg: oklch(0.32 0.06 190);
+	--cost-0-fg: oklch(0.80 0.10 190);
+	--cost-1-bg: oklch(0.32 0.06 220);
+	--cost-1-fg: oklch(0.80 0.10 220);
+	--cost-2-bg: oklch(0.32 0.06 250);
+	--cost-2-fg: oklch(0.80 0.10 250);
+	--cost-3-bg: oklch(0.32 0.06 280);
+	--cost-3-fg: oklch(0.80 0.10 280);
+	--cost-4-bg: oklch(0.32 0.06 320);
+	--cost-4-fg: oklch(0.80 0.10 320);
+	--cost-5-bg: oklch(0.32 0.06 350);
+	--cost-5-fg: oklch(0.80 0.10 350);
+	--cost-6-bg: oklch(0.32 0.06 20);
+	--cost-6-fg: oklch(0.80 0.10 20);
+
+	--r-xs: 4px;
 	--r-sm: 6px;
 	--r-md: 8px;
 	--r-lg: 12px;
+	--r-pill: 999px;
 
-	/* legacy aliases kept for components that still reference these names directly */
-	--silver: var(--rank-silver);
-	--bronze: var(--rank-bronze);
-	--bg-card: var(--surface);
-	--loss: var(--danger);
-	--green: var(--success);
-	--blue: oklch(0.40 0.09 265);
+	--fs-xs: 11px;
+	--fs-sm: 12px;
+	--fs-md: 14px;
+	--fs-lg: 16px;
+	--fs-xl: 20px;
+
+	--z-sticky: 100;
+	--z-dropdown: 500;
+	--z-modal: 1000;
+
+	--page-gap: 20px;
 }
 
 *,
@@ -86,24 +122,37 @@ p {
 	margin: 0;
 }
 
+/* Keyboard focus ring. !important because many controls are `all: unset` buttons in scoped
+   styles, which out-rank a bare :focus-visible. Text fields are excluded (they already show
+   focus with a gold border), and so are modal cards, which take focus programmatically on open. */
+:focus-visible:not(input:not([type="checkbox"], [type="radio"]), select, textarea, [role="dialog"]) {
+	outline: 2px solid var(--gold) !important;
+	outline-offset: 2px;
+}
+
 .layout {
 	display: grid;
-	grid-template-columns: 264px 1fr;
+	grid-template-columns: 264px minmax(0, 1fr);
 	gap: 22px;
 	width: 100%;
 	max-width: 1488px;
 	align-items: start;
 }
 
-.layout .no-admin {
-	grid-template-columns: 264px 1fr;
+@media (max-width: 800px) {
+	.layout {
+		grid-template-columns: minmax(0, 1fr);
+	}
 }
 
-@media (max-width: 800px) {
+@media (max-width: 640px) {
+	body {
+		padding: 12px;
+		gap: 12px;
+	}
 
-	.layout,
-	.layout .no-admin {
-		grid-template-columns: 1fr;
+	.layout {
+		gap: 12px;
 	}
 }
 
@@ -123,6 +172,19 @@ p {
 .layout > .card,
 .layout .main-content {
 	margin-bottom: 0;
+}
+
+/* the main column of a page when it is one big card */
+.card.main-content {
+	padding: 24px 28px;
+	gap: var(--page-gap);
+}
+
+@media (max-width: 640px) {
+	.card.main-content {
+		padding: 16px;
+		gap: 16px;
+	}
 }
 
 h2 {
@@ -156,18 +218,12 @@ h2 {
 	resize: vertical;
 	border: 1px solid var(--border-soft);
 	position: relative;
-	scroll-snap-type: y mandatory;
-	/* keeps snapped rows from landing partly behind the sticky header, which sits on top of
-	   this same scroll area rather than taking up its own space */
-	scroll-padding-top: 34px;
-}
-
-.table-wrapper tr {
-	scroll-snap-align: start;
 }
 
 .search-container {
 	display: flex;
+	flex-wrap: wrap;
+	gap: 10px 16px;
 	justify-content: space-between;
 	align-items: center;
 	border-bottom: 1px solid var(--border-soft);
@@ -216,7 +272,7 @@ th {
 	text-align: left;
 	position: sticky;
 	top: 0;
-	z-index: 100;
+	z-index: var(--z-sticky);
 	border-bottom: 1px solid var(--border-soft);
 }
 
@@ -224,6 +280,14 @@ td {
 	padding: 11px 20px;
 	border-top: 1px solid var(--border-soft);
 	font-weight: 600;
+}
+
+@media (max-width: 640px) {
+	th,
+	td {
+		padding-left: 8px;
+		padding-right: 8px;
+	}
 }
 
 .top-1 {
@@ -279,6 +343,94 @@ td {
 
 .inactive .player-name button {
 	color: var(--text-dim);
+}
+
+/* custom checkbox: <span class="cb-wrap"><input type="checkbox" class="cb-input" /> + svg.cb-check</span> */
+
+.cb-wrap {
+	position: relative;
+	display: inline-flex;
+	flex-shrink: 0;
+	width: 15px;
+	height: 15px;
+}
+
+.cb-wrap .cb-input {
+	appearance: none;
+	-webkit-appearance: none;
+	-moz-appearance: none;
+	box-sizing: border-box;
+	flex: 0 0 15px;
+	min-width: 15px;
+	max-width: 15px;
+	width: 15px;
+	height: 15px;
+	margin: 0;
+	padding: 0;
+	border-radius: var(--r-xs);
+	border: 1px solid var(--border);
+	background: var(--bg-elevated);
+	cursor: pointer;
+}
+
+.cb-wrap .cb-input:checked {
+	background: var(--gold);
+	border-color: var(--gold);
+}
+
+.cb-check {
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%, -50%);
+	color: var(--on-gold);
+	pointer-events: none;
+}
+
+/* text for screen readers only */
+.visually-hidden {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	padding: 0;
+	margin: -1px;
+	overflow: hidden;
+	clip: rect(0 0 0 0);
+	white-space: nowrap;
+	border: 0;
+}
+
+.status-pill {
+	display: inline-flex;
+	align-items: center;
+	min-width: 0;
+	padding: 3px 9px;
+	border-radius: var(--r-pill);
+	font-size: var(--fs-xs);
+	font-weight: 700;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.tone-success {
+	background: var(--success-dim);
+	color: var(--success);
+}
+
+.tone-info {
+	background: var(--info-dim);
+	color: var(--info);
+}
+
+.tone-gold {
+	background: var(--gold-dim);
+	color: var(--gold);
+}
+
+.tone-neutral {
+	background: var(--surface-2);
+	color: var(--text-muted);
 }
 
 .tier-badge {
@@ -383,6 +535,11 @@ textarea {
 	background: var(--surface-hover);
 }
 
+.btn-sm {
+	height: 32px;
+	padding: 0 12px;
+}
+
 .btn-common:disabled {
 	opacity: 0.5;
 	cursor: not-allowed;
@@ -390,9 +547,9 @@ textarea {
 }
 
 .btn-play {
-	--btn-fg: oklch(0.20 0.03 80);
+	--btn-fg: var(--on-gold);
 	background: var(--gold);
-	color: oklch(0.20 0.03 80);
+	color: var(--on-gold);
 	border-color: var(--gold);
 }
 
@@ -407,7 +564,7 @@ textarea {
 }
 
 .btn-success:hover {
-	background: oklch(0.70 0.140 150 / 0.22);
+	background: var(--success-hover);
 }
 
 .btn-danger-ghost {
@@ -463,7 +620,7 @@ textarea {
 	background: var(--surface-2);
 	border: 1px solid var(--border);
 	color: var(--gold);
-	border-radius: 5px;
+	border-radius: var(--r-sm);
 	font-weight: 700;
 	font-size: 11px;
 }
@@ -504,49 +661,100 @@ textarea {
 	display: flex;
 	position: fixed;
 	inset: 0;
-	background: oklch(0.10 0.005 95 / 0.6);
+	padding: 12px;
+	background: var(--overlay);
 	justify-content: center;
 	align-items: center;
-	z-index: 1000;
+	z-index: var(--z-modal);
 }
 
-.popup .card {
+.popup > [role="dialog"]:focus {
+	outline: none;
+}
+
+/* :where() keeps this at zero specificity so each popup's own width wins; the max-* limits
+   keep fixed-width popups on screen on phones and let tall ones scroll */
+:where(.popup) :where(.card) {
 	width: 360px;
+	max-width: 100%;
+	max-height: calc(100dvh - 24px);
+	overflow-y: auto;
 }
 
-/* profile */
-
-#profTier {
-	margin-bottom: 6px;
+.close-row {
+	display: flex;
+	justify-content: flex-end;
+	margin-bottom: -8px;
 }
 
-.btn-clear-history {
-	width: auto;
-	height: auto;
-	padding: 5px 10px;
-	background: var(--danger-dim);
-	color: var(--danger);
-	border-color: var(--danger-border);
+.popup-title {
+	font-size: var(--fs-lg);
+	font-weight: 800;
+	line-height: 1.35;
+	color: var(--text);
+	border: none;
+	padding: 0;
 	margin: 0;
+}
+
+.btn-block {
+	width: 100%;
+}
+
+/* input with a leading search icon: <span class="search-wrap"><svg class="search-icon"/><input class="search-input"/></span> */
+.search-wrap {
+	position: relative;
+	display: block;
+}
+
+.search-icon {
+	position: absolute;
+	left: 10px;
+	top: 50%;
+	transform: translateY(-50%);
+	color: var(--text-dim);
+	pointer-events: none;
+}
+
+.search-wrap .search-input {
+	width: 100%;
+	padding-left: 28px;
+}
+
+/* native select with a custom chevron: <span class="select-wrap"><select/><svg class="select-arrow"/></span> */
+.select-wrap {
+	position: relative;
+	display: block;
+}
+
+.select-wrap select {
+	appearance: none;
+	-webkit-appearance: none;
+	-moz-appearance: none;
+	width: 100%;
+	padding-right: 32px;
+}
+
+.select-arrow {
+	position: absolute;
+	right: 11px;
+	top: 50%;
+	transform: translateY(-50%);
+	color: var(--text-dim);
+	pointer-events: none;
+}
+
+.divider {
+	height: 1px;
+	background: var(--border-soft);
+	margin: 6px 0;
+	border: none;
 }
 
 h1 {
 	margin: 0;
 	margin-bottom: 10px;
 	color: var(--gold);
-}
-
-.btn-reset-password {
-	all: unset;
-	cursor: pointer;
-	align-self: center;
-	color: var(--text-dim);
-}
-
-.login-divider {
-	text-align: center;
-	color: var(--text-dim);
-	margin: 4px 0;
 }
 
 /* forms */
@@ -571,55 +779,30 @@ h1 {
 	width: auto;
 }
 
-.form-row-wide {
-	display: flex;
-	align-items: center;
-	gap: 16px;
-}
-
-.form-row-wide label {
-	flex: 0 0 200px;
-	color: var(--text-dim);
-}
-
-.form-row-wide input,
-.form-row-wide select,
-.form-row-wide textarea {
-	width: 240px;
-}
-
-.form-row-wide textarea {
-	resize: vertical;
-}
-
-.form-row-wide input[type="checkbox"] {
-	width: auto;
-	height: auto;
-}
-
-.form-row-wide input[type="file"] {
-	padding: 8px;
-	height: auto;
-}
-
-.btn-col {
-	margin-top: 14px;
+/* stacked label + field, used by full-page forms */
+.form-group {
 	display: flex;
 	flex-direction: column;
+	gap: 6px;
+	min-width: 0;
+}
+
+.form-group > label {
+	font-size: var(--fs-sm);
+	font-weight: 600;
+	color: var(--text-muted);
+}
+
+/* submit row of a full-page form: primary action first, then Cancel */
+.form-actions {
+	display: flex;
+	flex-wrap: wrap;
 	gap: 10px;
-	align-items: center;
-	justify-content: center;
+	max-width: 420px;
 }
 
-.btn-col .btn-common {
-	width: 240px;
-}
-
-.paste-btn {
-	width: auto;
-	height: auto;
-	padding: 10px 14px;
-	white-space: nowrap;
+.form-actions > .btn-common {
+	flex: 1 1 140px;
 }
 
 .input-row {
@@ -644,24 +827,6 @@ h1 {
 	font-weight: 700;
 }
 
-/* screenshot preview button */
-
-.img-btn {
-	background: none;
-	border: none;
-	padding: 0;
-	width: 100%;
-}
-
-.img-btn img {
-	width: 100%;
-	height: auto;
-	object-fit: contain;
-	border-radius: var(--r-md);
-	cursor: pointer;
-	max-height: 240px;
-}
-
 /* shared layout helpers */
 
 .match-list {
@@ -672,8 +837,31 @@ h1 {
 
 .tournament-container {
 	display: grid;
-	grid-template-columns: repeat(3, 1fr);
+	grid-template-columns: repeat(3, minmax(0, 1fr));
 	gap: 14px;
+}
+
+@media (max-width: 1100px) {
+	.tournament-container {
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+	}
+}
+
+@media (max-width: 640px) {
+	.tournament-container {
+		grid-template-columns: minmax(0, 1fr);
+	}
+}
+
+.page-title {
+	font-size: var(--fs-xl);
+	margin: 0;
+	padding-bottom: 14px;
+}
+
+.empty-state {
+	color: var(--text-muted);
+	padding: 12px 0;
 }
 
 /* bracket match display */

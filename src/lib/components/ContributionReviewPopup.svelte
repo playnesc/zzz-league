@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { modal } from "$lib/actions/modal";
 	import type { ReviewVote } from "$lib/api/dtos";
 	import { mindscapeLabels } from "$lib/costData";
 	import {
@@ -91,9 +92,9 @@
 	let canModerate = $derived($isAdmin || $isModerator);
 
 	let voteLabels: Record<ReviewVote, string> = $derived({
-		positive: `👍 ${$_("contributionReviewPopup.vote.positive")}`,
-		neutral: `😐 ${$_("contributionReviewPopup.vote.neutral")}`,
-		negative: `👎 ${$_("contributionReviewPopup.vote.negative")}`,
+		positive: $_("contributionReviewPopup.vote.positive"),
+		neutral: $_("contributionReviewPopup.vote.neutral"),
+		negative: $_("contributionReviewPopup.vote.negative"),
 	});
 
 	let statusLabels: Record<ContributionDetail["status"], string> = $derived({
@@ -151,12 +152,8 @@
 </script>
 
 {#if open}
-	<!-- svelte-ignore a11y_click_events_have_key_events -->
-	<!-- svelte-ignore a11y_no_static_element_interactions -->
-	<div class="popup" onclick={() => (open = false)}>
-		<!-- svelte-ignore a11y_click_events_have_key_events -->
-		<!-- svelte-ignore a11y_no_static_element_interactions -->
-		<div class="card review-card" onclick={(e) => e.stopPropagation()}>
+	<div class="popup">
+		<div class="card review-card" use:modal={() => (open = false)}>
 			{#if !contribution}
 				<p class="notice">{$_("common.loading")}</p>
 			{:else}
@@ -274,15 +271,33 @@
 				{#if showReviewForm}
 					<div class="add-review">
 						<div class="vote-choice">
-							<button type="button" class:selected={vote === "positive"} onclick={() => (vote = "positive")}
-								>👍</button
+							<button
+								type="button"
+								class:selected={vote === "positive"}
+								aria-pressed={vote === "positive"}
+								onclick={() => (vote = "positive")}
 							>
-							<button type="button" class:selected={vote === "neutral"} onclick={() => (vote = "neutral")}
-								>😐</button
+								<svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg>
+								{voteLabels.positive}
+							</button>
+							<button
+								type="button"
+								class:selected={vote === "neutral"}
+								aria-pressed={vote === "neutral"}
+								onclick={() => (vote = "neutral")}
 							>
-							<button type="button" class:selected={vote === "negative"} onclick={() => (vote = "negative")}
-								>👎</button
+								<svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="8" y1="15" x2="16" y2="15"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
+								{voteLabels.neutral}
+							</button>
+							<button
+								type="button"
+								class:selected={vote === "negative"}
+								aria-pressed={vote === "negative"}
+								onclick={() => (vote = "negative")}
 							>
+								<svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3zm7-13h2.67A2.31 2.31 0 0 1 22 4v7a2.31 2.31 0 0 1-2.33 2H17"/></svg>
+								{voteLabels.negative}
+							</button>
 						</div>
 						<textarea rows="2" placeholder={$_("contributionReviewPopup.reviewCommentPlaceholder")} bind:value={comment}></textarea>
 						{#if errorMessage}
@@ -338,15 +353,6 @@
 		gap: 12px;
 	}
 
-	.popup-title {
-		font-size: 16px;
-		font-weight: 800;
-		line-height: 1.35;
-		border: none;
-		padding-bottom: 0;
-		margin-bottom: 0;
-	}
-
 	.close-btn {
 		margin-top: -4px;
 		margin-right: -6px;
@@ -364,8 +370,6 @@
 		border-radius: var(--r-sm);
 		font-size: 11px;
 		font-weight: 700;
-		letter-spacing: 0.02em;
-		text-transform: uppercase;
 		white-space: nowrap;
 	}
 
@@ -422,11 +426,9 @@
 	}
 
 	.section-title {
-		font-size: 11px;
-		font-weight: 700;
-		letter-spacing: 0.05em;
-		text-transform: uppercase;
-		color: var(--text-dim);
+		font-size: var(--fs-sm);
+		font-weight: 600;
+		color: var(--text-muted);
 	}
 
 	.diff-scroll {
@@ -456,7 +458,7 @@
 	.diff-cell {
 		text-align: center;
 		padding: 7px 2px;
-		border-radius: 6px;
+		border-radius: var(--r-sm);
 		background: var(--surface);
 		font-size: 12px;
 		font-weight: 600;
@@ -665,21 +667,24 @@
 
 	.vote-choice button {
 		flex: 1;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		gap: 6px;
+		min-height: 36px;
 		background: var(--surface-2);
 		border: 1px solid var(--border);
 		border-radius: var(--r-md);
-		padding: 8px;
-		font-size: 18px;
+		padding: 6px 8px;
+		color: var(--text-muted);
+		font-weight: 600;
 		cursor: pointer;
 	}
 
 	.vote-choice button.selected {
 		border-color: var(--gold);
 		background: var(--gold-dim);
-	}
-
-	.btn-block {
-		width: 100%;
+		color: var(--gold);
 	}
 
 	.moderation-block {

@@ -2,12 +2,9 @@
 	import { resolve } from "$app/paths";
 	import { _, locale, formatDate } from "$lib/i18n";
 	import type { Tournament } from "$lib/types";
-	import {
-		TOURNAMENT_STATE,
-		isRegistrationClosed,
-		isRegistrationWindowOpen,
-	} from "$lib/tournamentState";
+	import { STATUS_TONE, getTournamentStatus } from "$lib/tournamentState";
 	import { dateDisplayOptions } from "$lib/uiCommon";
+	import TierBadge from "$lib/components/TierBadge.svelte";
 
 	let {
 		tournament,
@@ -15,88 +12,53 @@
 		compact = false,
 	}: { tournament: Tournament; now: number; compact?: boolean } = $props();
 
-	let registrationWindowOpen = $derived(
-		isRegistrationWindowOpen(
-			tournament.state,
-			tournament.registrationStartDate,
-			tournament.registrationEndDate,
-			now,
-		),
-	);
+	let status = $derived(getTournamentStatus(tournament, now));
+	let tone = $derived(STATUS_TONE[status]);
 
-	let status = $derived(
-		tournament.state === TOURNAMENT_STATE.COMPLETE
-			? "ended"
-			: tournament.state === TOURNAMENT_STATE.AWAITING_REVIEW ||
-				  tournament.state === TOURNAMENT_STATE.STARTED
-				? "ongoing"
-				: registrationWindowOpen
-					? "registration"
-					: "upcoming",
-	);
+	function date(ms: number) {
+		return formatDate(new Date(ms), dateDisplayOptions, $locale);
+	}
+
+	let statusText = $derived.by(() => {
+		switch (status) {
+			case "upcoming":
+				return $_("tournamentCard.registrationOpens", { values: { date: date(tournament.registrationStartDate) } });
+			case "registration":
+				return $_("tournamentCard.registrationUntil", { values: { date: date(tournament.registrationEndDate) } });
+			case "registration_closed":
+			case "bracket_created":
+				return $_("tournamentCard.startsOn", { values: { date: date(tournament.tournamentStartDate) } });
+			case "ongoing":
+				return $_("tournamentCard.ongoing");
+			case "complete":
+				return $_("tournamentCard.ended");
+		}
+	});
 </script>
 
 <a
-	class="tournament status-{status}"
+	class="tournament tone-border-{tone}"
+	class:ended={status === "complete"}
 	class:compact
 	href={resolve(`/tournaments/${tournament.id}`)}
 >
-	{#snippet tierBadge(tier: number)}
-		{#if tier === 0}
-			<span class="tier-badge t-newbie">NEWBIE</span>
-		{:else if tier === 100}
-			<span class="tier-badge t-mid">MID TIER</span>
-		{:else if tier === 1000}
-			<span class="tier-badge t-high">HIGH TIER</span>
-		{/if}
-	{/snippet}
-
 	<div class="tournament-row">
 		<p class="tournament-name">{tournament.name}</p>
 		<span class="meta-tag">{tournament.registrationType === "team" ? "2x2" : "1x1"}</span>
 	</div>
 	<div class="tournament-row">
 		<p class="tournament-dates">
-			{formatDate(new Date(tournament.tournamentStartDate), dateDisplayOptions, $locale)}
-			- {formatDate(new Date(tournament.tournamentEndDate), dateDisplayOptions, $locale)}
+			{date(tournament.tournamentStartDate)} – {date(tournament.tournamentEndDate)}
 		</p>
 		<span class="meta-tag"
 			>{tournament.gameMode === "deadly_assault" ? "Deadly Assault" : "Shiyu Defense"}</span
 		>
 	</div>
-	<div class="tournament-row">
-		{#if registrationWindowOpen}
-			<p class="tournament-status">
-				{$_("tournamentCard.registrationUntil", {
-					values: {
-						date: formatDate(new Date(tournament.registrationEndDate), dateDisplayOptions, $locale),
-					},
-				})}
-			</p>
-		{/if}
-		{#if isRegistrationClosed(tournament.state)}
-			<p class="tournament-status">
-				{$_("tournamentCard.startsOn", {
-					values: {
-						date: formatDate(new Date(tournament.tournamentStartDate), dateDisplayOptions, $locale),
-					},
-				})}
-			</p>
-		{/if}
-		{#if tournament.state === TOURNAMENT_STATE.STARTED || tournament.state === TOURNAMENT_STATE.AWAITING_REVIEW}
-			<p class="tournament-status">{$_("tournamentCard.ongoing")}</p>
-		{/if}
-		{#if tournament.state === TOURNAMENT_STATE.COMPLETE}
-			<p class="tournament-status">{$_("tournamentCard.ended")}</p>
-		{/if}
-		<div class="tier-tags">
-			{#if tournament.minTier === tournament.maxTier}
-				{@render tierBadge(tournament.minTier)}
-			{:else}
-				{@render tierBadge(tournament.minTier)}<span class="tier-range-sep">–</span
-				>{@render tierBadge(tournament.maxTier)}
-			{/if}
-		</div>
+	<div class="tournament-row status-row">
+		<p class="status-pill tone-{tone}">{statusText}</p>
+		<span class="tier-tags">
+			<TierBadge tier={tournament.minTier} max={tournament.maxTier} />
+		</span>
 	</div>
 </a>
 
@@ -116,7 +78,7 @@
 		border-left-width: 4px;
 		border-left-style: solid;
 		border-left-color: var(--accent);
-		transition: transform 0.15s ease, border-color 0.15s ease;
+		transition: border-color 0.15s ease;
 	}
 
 	.tournament:hover {
@@ -172,66 +134,34 @@
 		gap: 4px;
 	}
 
-	.tier-range-sep {
-		color: var(--text-dim);
-		font-size: 10px;
-	}
-
 	.tournament.compact {
 		background: var(--surface-2);
 		border-radius: var(--r-md);
 		border-left-width: 3px;
 	}
 
-	.tournament.compact.status-ended .tournament-status {
-		background: var(--surface-hover);
-	}
-
-	.tournament-status {
-		min-width: 0;
-		padding: 3px 9px;
-		border-radius: 999px;
-		font-size: 10px;
-		font-weight: 700;
-		overflow: hidden;
-		text-overflow: ellipsis;
-		white-space: nowrap;
-	}
-
-	.tournament.status-upcoming {
-		--accent: var(--info);
-	}
-
-	.tournament.status-upcoming .tournament-status {
-		background: var(--info-dim);
-		color: var(--info);
-	}
-
-	.tournament.status-registration {
+	.tournament.tone-border-success {
 		--accent: var(--success);
 	}
 
-	.tournament.status-registration .tournament-status {
-		background: var(--success-dim);
-		color: var(--success);
+	.tournament.tone-border-info {
+		--accent: var(--info);
 	}
 
-	.tournament.status-ongoing {
+	.tournament.tone-border-gold {
 		--accent: var(--gold);
 	}
 
-	.tournament.status-ongoing .tournament-status {
-		background: var(--gold-dim);
-		color: var(--gold);
-	}
-
-	.tournament.status-ended {
+	.tournament.tone-border-neutral {
 		--accent: var(--border);
-		opacity: 0.6;
 	}
 
-	.tournament.status-ended .tournament-status {
-		background: var(--surface-2);
-		color: var(--text-dim);
+	.status-row {
+		flex-wrap: wrap;
+		row-gap: 6px;
+	}
+
+	.tournament.ended {
+		opacity: 0.6;
 	}
 </style>

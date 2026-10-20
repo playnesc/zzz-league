@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { modal } from "$lib/actions/modal";
 	import { _ } from "$lib/i18n";
 	import { currentUser, isAdmin, isModerator } from "$lib/store";
 	import { hasTournamentStarted } from "$lib/tournamentState";
@@ -106,15 +107,11 @@
 {/snippet}
 
 {#if open}
-	<!-- svelte-ignore a11y_click_events_have_key_events -->
-	<!-- svelte-ignore a11y_no_static_element_interactions -->
-	<div class="popup" onclick={close}>
-		<!-- svelte-ignore a11y_click_events_have_key_events -->
-		<!-- svelte-ignore a11y_no_static_element_interactions -->
+	<div class="popup">
 		<div
 			class="card registration-card"
 			class:team-card={reg?.player2}
-			onclick={(e) => e.stopPropagation()}
+			use:modal={close}
 		>
 			<div class="close-row">
 				<button class="icon-btn" onclick={close} aria-label={$_("common.close")}>
@@ -160,20 +157,6 @@
 
 	.team-card {
 		width: 760px;
-	}
-
-	.close-row {
-		display: flex;
-		justify-content: flex-end;
-		margin-bottom: -8px;
-	}
-
-	.popup-title {
-		font-size: 18px;
-		font-weight: 800;
-		border: none;
-		padding-bottom: 0;
-		margin-bottom: 0;
 	}
 
 	.member-columns {

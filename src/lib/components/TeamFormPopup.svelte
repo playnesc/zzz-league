@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { modal } from "$lib/actions/modal";
 	import { createTeam, listPlayers, updateTeam } from "$lib/backend";
 	import { useObjectUrlPreview } from "$lib/imagePreview.svelte.js";
 	import { _ } from "$lib/i18n";
@@ -82,12 +83,8 @@
 </script>
 
 {#if open}
-	<!-- svelte-ignore a11y_click_events_have_key_events -->
-	<!-- svelte-ignore a11y_no_static_element_interactions -->
-	<div class="popup" onclick={close}>
-		<!-- svelte-ignore a11y_click_events_have_key_events -->
-		<!-- svelte-ignore a11y_no_static_element_interactions -->
-		<div class="card team-form-card" onclick={(e) => e.stopPropagation()}>
+	<div class="popup">
+		<div class="card team-form-card" use:modal={close}>
 			<div class="close-row">
 				<button class="icon-btn" onclick={close} aria-label={$_("common.close")}>
 					<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
@@ -199,20 +196,6 @@
 		gap: 14px;
 	}
 
-	.close-row {
-		display: flex;
-		justify-content: flex-end;
-		margin-bottom: -8px;
-	}
-
-	.popup-title {
-		font-size: 16px;
-		font-weight: 800;
-		border: none;
-		padding-bottom: 0;
-		margin-bottom: 0;
-	}
-
 	.logo-row {
 		display: flex;
 		gap: 14px;
@@ -295,47 +278,6 @@
 		color: var(--text-muted);
 		font-size: 12px;
 		font-weight: 600;
-	}
-
-	.search-wrap {
-		position: relative;
-		display: block;
-	}
-
-	.search-icon {
-		position: absolute;
-		left: 10px;
-		top: 50%;
-		transform: translateY(-50%);
-		color: var(--text-dim);
-		pointer-events: none;
-	}
-
-	.search-input {
-		width: 100%;
-		padding-left: 28px;
-	}
-
-	.select-wrap {
-		position: relative;
-		display: block;
-	}
-
-	.select-wrap select {
-		appearance: none;
-		-webkit-appearance: none;
-		-moz-appearance: none;
-		width: 100%;
-		padding-right: 32px;
-	}
-
-	.select-arrow {
-		position: absolute;
-		right: 11px;
-		top: 50%;
-		transform: translateY(-50%);
-		color: var(--text-dim);
-		pointer-events: none;
 	}
 
 	.btn-block {

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { confirmDialog, notify } from "$lib/dialogs";
 	import { goto } from "$app/navigation";
 	import { resolve } from "$app/paths";
 	import { page } from "$app/state";
@@ -162,6 +163,16 @@
 		draggedUid = null;
 	}
 
+	// Keyboard / touch alternative to drag and drop: -1 moves back to the unassigned pool.
+	function moveTo(uid: string, target: number) {
+		const next = removeFromGroups(uid);
+		if (target >= 0) {
+			if (next[target].length >= divisionSizes[target]) return;
+			next[target] = [...next[target], uid];
+		}
+		groups = next;
+	}
+
 	function moveToPool() {
 		if (!draggedUid) return;
 		groups = removeFromGroups(draggedUid);
@@ -213,9 +224,9 @@
 			return;
 		}
 		if (
-			!confirm(
-				$_("pageTournamentSplit.confirmSplit", { values: { count: divisionCount } }),
-			)
+			!(await confirmDialog($_("pageTournamentSplit.confirmSplit", { values: { count: divisionCount } }), {
+					confirmLabel: $_("pageTournamentSplit.splitButton"),
+				}))
 		)
 			return;
 
@@ -230,6 +241,22 @@
 		}
 	}
 </script>
+
+{#snippet mover(uid: string, name: string, current: number)}
+	<select
+		class="move-select"
+		aria-label={$_("pageTournamentSplit.moveToLabel", { values: { name } })}
+		value={String(current)}
+		onchange={(e) => moveTo(uid, Number(e.currentTarget.value))}
+	>
+		<option value="-1">{$_("pageTournamentSplit.unassignedOption")}</option>
+		{#each groups as _group, gi (gi)}
+			<option value={String(gi)} disabled={gi !== current && isDivisionFull(gi)}>
+				{$_("pageTournamentSplit.divisionHeading", { values: { index: gi + 1 } })}
+			</option>
+		{/each}
+	</select>
+{/snippet}
 
 <div class="layout">
 	<SidePanel></SidePanel>
@@ -254,7 +281,7 @@
 						values: { count: approvedPlayers.length },
 					})}
 				</p>
-				<div class="btn-row narrow">
+				<div class="form-actions">
 					<a class="btn-common" href={resolve(`/tournaments/${id}`)}
 						>{$_("common.back")}</a
 					>
@@ -309,7 +336,8 @@
 									ondragstart={() => handleDragStart(player.uid)}
 									ondragend={handleDragEnd}
 								>
-									{player.name}
+									<span class="player-card-name">{player.name}</span>
+									{@render mover(player.uid, player.name, -1)}
 								</div>
 							{/each}
 						</div>
@@ -346,6 +374,7 @@
 							</p>
 							<div class="player-list">
 								{#each group as uid (uid)}
+									{@const name = approvedPlayers.find((p) => p.uid === uid)?.name ?? uid}
 									<!-- svelte-ignore a11y_no_static_element_interactions -->
 									<div
 										class="player-card"
@@ -353,8 +382,8 @@
 										ondragstart={() => handleDragStart(uid)}
 										ondragend={handleDragEnd}
 									>
-										{approvedPlayers.find((p) => p.uid === uid)
-											?.name ?? uid}
+										<span class="player-card-name">{name}</span>
+										{@render mover(uid, name, i)}
 									</div>
 								{/each}
 							</div>
@@ -367,7 +396,7 @@
 				</p>
 
 				{#if status}<p class="status error">{status}</p>{/if}
-				<div class="btn-row narrow">
+				<div class="form-actions">
 					<button
 						class="btn-common btn-play"
 						class:btn-loading={isSplitting}
@@ -383,11 +412,6 @@
 </div>
 
 <style>
-	.main-content {
-		padding: 24px 28px;
-		gap: 18px;
-	}
-
 	.page-title {
 		font-size: 20px;
 		padding-bottom: 16px;
@@ -476,7 +500,11 @@
 	}
 
 	.player-card {
-		padding: 8px 10px;
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 8px;
+		padding: 6px 6px 6px 10px;
 		border-radius: var(--r-sm);
 		background: var(--surface-2);
 		border: 1px solid var(--border-soft);
@@ -489,13 +517,27 @@
 		cursor: grabbing;
 	}
 
+	.player-card-name {
+		min-width: 0;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	.move-select {
+		width: auto;
+		max-width: 50%;
+		height: 28px;
+		padding: 0 6px;
+		font-size: var(--fs-xs);
+		flex-shrink: 0;
+		cursor: pointer;
+	}
+
 	.hint {
 		color: var(--text-dim);
 		font-size: 12px;
 		margin: 0;
 	}
 
-	.btn-row.narrow {
-		max-width: 420px;
-	}
 </style>

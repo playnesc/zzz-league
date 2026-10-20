@@ -14,11 +14,6 @@
 </div>
 
 <style>
-	.main-content {
-		padding: 24px 28px;
-		gap: 18px;
-	}
-
 	.page-title {
 		font-size: 20px;
 		padding-bottom: 16px;

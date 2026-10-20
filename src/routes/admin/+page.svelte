@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { confirmDialog, notify } from "$lib/dialogs";
 	import { listPlayers, listStaff, setPlayerRole } from "$lib/backend";
 	import { _ } from "$lib/i18n";
 	import SidePanel from "$lib/components/SidePanel.svelte";
@@ -40,21 +41,26 @@
 					staff = loadedStaff;
 					players = loadedPlayers;
 				})
-				.catch((error) => alert(error))
+				.catch((error) => notify(error))
 				.finally(() => (loading = false));
 		}
 	});
 
 	async function changeRole(uid: string, name: string, role: PlayerRole) {
 		const key = role === "moderator" ? "pageAdmin.promoteConfirm" : "pageAdmin.demoteConfirm";
-		if (busyUid || !confirm($_(key, { values: { name } }))) return;
+		const promoting = role === "moderator";
+		const confirmed = await confirmDialog($_(key, { values: { name } }), {
+			danger: !promoting,
+			confirmLabel: $_(promoting ? "pageAdmin.promoteButton" : "pageAdmin.demoteButton"),
+		});
+		if (busyUid || !confirmed) return;
 
 		busyUid = uid;
 		try {
 			await setPlayerRole(uid, role);
 			staff = await listStaff();
 		} catch (error) {
-			alert(error);
+			notify(error);
 		} finally {
 			busyUid = null;
 		}
@@ -81,10 +87,11 @@
 					<input
 						type="text"
 						class="search-input"
+						aria-label={$_("pageAdmin.searchPlayerPlaceholder")}
 						placeholder={$_("pageAdmin.searchPlayerPlaceholder")}
 						bind:value={searchQuery}
 					/>
-					<select bind:value={selectedUid} disabled={promotable.length === 0}>
+					<select bind:value={selectedUid} disabled={promotable.length === 0} aria-label={$_("pageAdmin.promoteLabel")}>
 						{#if promotable.length === 0}
 							<option value="">{$_("pageAdmin.selectPlayer")}</option>
 						{/if}
@@ -164,11 +171,6 @@
 </div>
 
 <style>
-	.main-content {
-		padding: 24px 28px;
-		gap: 22px;
-	}
-
 	.page-title {
 		font-size: 20px;
 		padding-bottom: 16px;

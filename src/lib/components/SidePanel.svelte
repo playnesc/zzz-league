@@ -13,8 +13,16 @@
 	import { currentUser, isAdmin } from "$lib/store";
 	import { resolve } from "$app/paths";
 	import { _ } from "$lib/i18n";
+	import { onMount } from "svelte";
 
 	let avatar = $derived(getAgentAvatar($currentUser?.avatar));
+
+	// The rules are reference material: open beside the content on desktop, collapsed on phones
+	// where the side panel stacks above the leaderboard.
+	let rulesOpen = $state(true);
+	onMount(() => {
+		if (window.matchMedia("(max-width: 800px)").matches) rulesOpen = false;
+	});
 </script>
 
 <div class="side-panel">
@@ -66,8 +74,14 @@
 	{/if}
 
 	{#if !$isAdmin}
-		<div class="card">
-			<h2>{$_("sidePanel.leagueCodeTitle")}</h2>
+		<details class="card rules-card" bind:open={rulesOpen}>
+			<summary>
+				<h2>
+					<svg class="rules-icon" aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 21h8"/><path d="M12 17v4"/><path d="M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M7 5H4a1 1 0 0 0-1 1 5 5 0 0 0 4 4.9"/><path d="M17 5h3a1 1 0 0 1 1 1 5 5 0 0 1-4 4.9"/></svg>
+					{$_("sidePanel.leagueCodeTitle")}
+				</h2>
+				<svg class="rules-chevron" aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+			</summary>
 			<ul class="rules-list">
 				<li>{@html $_("sidePanel.rules.ranks")}</li>
 				<li>{@html $_("sidePanel.rules.qualification")}</li>
@@ -80,7 +94,7 @@
 				<li>{@html $_("sidePanel.rules.eloPoints")}</li>
 				<li>{@html $_("sidePanel.rules.techLoss")}</li>
 			</ul>
-		</div>
+		</details>
 	{/if}
 
 	{#if $isAdmin}
@@ -162,6 +176,49 @@
 
 	.nav-item-danger {
 		color: var(--danger);
+	}
+
+	.rules-card summary {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 10px;
+		cursor: pointer;
+		list-style: none;
+		border-radius: var(--r-sm);
+	}
+
+	.rules-card summary::-webkit-details-marker {
+		display: none;
+	}
+
+	.rules-card summary h2 {
+		flex: 1;
+		margin-bottom: 0;
+	}
+
+	.rules-card[open] summary {
+		margin-bottom: 8px;
+	}
+
+	.rules-card:not([open]) summary h2 {
+		border-bottom: none;
+		padding-bottom: 0;
+	}
+
+	.rules-icon {
+		color: var(--gold);
+		flex-shrink: 0;
+	}
+
+	.rules-chevron {
+		flex-shrink: 0;
+		color: var(--text-muted);
+		transition: transform 0.15s;
+	}
+
+	.rules-card[open] .rules-chevron {
+		transform: rotate(180deg);
 	}
 
 	.rules-list {

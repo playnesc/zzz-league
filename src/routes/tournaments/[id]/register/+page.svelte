@@ -217,7 +217,7 @@
 				</div>
 
 				{#if status}<p class="status error">{status}</p>{/if}
-				<div class="btn-row-form">
+				<div class="form-actions">
 					<button
 						class="btn-common btn-play"
 						class:btn-loading={isRegistering}
@@ -235,11 +235,6 @@
 </div>
 
 <style>
-	.main-content {
-		padding: 24px 28px;
-		gap: 18px;
-	}
-
 	.page-title {
 		font-size: 20px;
 		padding-bottom: 16px;
@@ -276,57 +271,8 @@
 		cursor: pointer;
 	}
 
-	.cb-wrap {
-		position: relative;
-		display: inline-flex;
-		flex-shrink: 0;
-		width: 15px;
-		height: 15px;
-	}
-
-	.cb-input {
-		appearance: none;
-		-webkit-appearance: none;
-		-moz-appearance: none;
-		box-sizing: border-box;
-		flex: 0 0 15px;
-		min-width: 15px;
-		max-width: 15px;
-		width: 15px;
-		height: 15px;
-		margin: 0;
-		padding: 0;
-		border-radius: 4px;
-		border: 1px solid var(--border);
-		background: var(--bg-elevated);
-		cursor: pointer;
-	}
-
-	.cb-input:checked {
-		background: var(--gold);
-		border-color: var(--gold);
-	}
-
 	.cb-input.invalid {
 		border-color: var(--danger);
 	}
 
-	.cb-check {
-		position: absolute;
-		top: 50%;
-		left: 50%;
-		transform: translate(-50%, -50%);
-		color: oklch(0.2 0.03 80);
-		pointer-events: none;
-	}
-
-	.btn-row-form {
-		display: flex;
-		gap: 10px;
-		max-width: 420px;
-	}
-
-	.btn-row-form .btn-common {
-		flex: 1;
-	}
 </style>

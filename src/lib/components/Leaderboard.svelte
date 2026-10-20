@@ -138,7 +138,13 @@
 							style="background-image: {avatar ? 'none' : `url(${avatarPlaceholder})`}"
 						>
 							{#if avatar}
-								<img src={avatar.src} alt={avatar.name} />
+								<img
+									src={avatar.px24?.src ?? avatar.src}
+									srcset={avatar.px24?.srcset}
+									width="24"
+									height="24"
+									alt={avatar.name}
+								/>
 							{/if}
 						</div>
 						<button
@@ -183,39 +189,61 @@
 		gap: 10px;
 	}
 
+	/* The image box must stay exactly 24px (the px24 srcset size) so it paints 1:1. The ring is
+	   drawn by ::after on top instead of a real border, so the thicker top-3 ring can't shrink the
+	   image box to a fractional size and force a resample. */
 	.player-avatar {
+		position: relative;
 		flex-shrink: 0;
 		width: 26px;
 		height: 26px;
+		padding: 1px;
 		border-radius: 50%;
 		background-color: var(--surface-2);
 		background-size: cover;
 		background-position: center;
-		border: 1px solid var(--border);
 		display: flex;
 		align-items: center;
 		justify-content: center;
 		overflow: hidden;
 	}
 
+	.player-avatar::after {
+		content: "";
+		position: absolute;
+		inset: 0;
+		border-radius: 50%;
+		border: 1px solid var(--border);
+		pointer-events: none;
+	}
+
 	.player-avatar.rank-1 {
-		border: 1.5px solid var(--gold);
 		color: var(--gold);
 	}
 
+	.player-avatar.rank-1::after {
+		border: 1.5px solid var(--gold);
+	}
+
 	.player-avatar.rank-2 {
-		border: 1.5px solid var(--rank-silver);
 		color: var(--rank-silver);
 	}
 
+	.player-avatar.rank-2::after {
+		border: 1.5px solid var(--rank-silver);
+	}
+
 	.player-avatar.rank-3 {
-		border: 1.5px solid var(--rank-bronze);
 		color: var(--rank-bronze);
 	}
 
+	.player-avatar.rank-3::after {
+		border: 1.5px solid var(--rank-bronze);
+	}
+
 	.player-avatar img {
-		width: 100%;
-		height: 100%;
+		width: 24px;
+		height: 24px;
 		object-fit: cover;
 		display: block;
 	}

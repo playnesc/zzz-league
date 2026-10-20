@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { notify } from "$lib/dialogs";
 	import { useObjectUrlPreview } from "$lib/imagePreview.svelte.js";
 	import type { MemberRegistrationForm } from "$lib/tournamentRegistrationForm";
 	import { bustCache, openImagePopup, pasteImageFromClipboard } from "$lib/uiCommon";
@@ -31,7 +32,7 @@
 		try {
 			const files = await pasteImageFromClipboard();
 			if (!files) {
-				alert($_("tournamentMemberRegistrationFields.noImageInClipboard"));
+				notify($_("tournamentMemberRegistrationFields.noImageInClipboard"));
 				return;
 			}
 			if (target === "roster") form.rosterScreenshot = files;
@@ -213,46 +214,6 @@
 		cursor: pointer;
 	}
 
-	.cb-wrap {
-		position: relative;
-		display: inline-flex;
-		flex-shrink: 0;
-		width: 15px;
-		height: 15px;
-	}
-
-	.cb-input {
-		appearance: none;
-		-webkit-appearance: none;
-		-moz-appearance: none;
-		box-sizing: border-box;
-		flex: 0 0 15px;
-		min-width: 15px;
-		max-width: 15px;
-		width: 15px;
-		height: 15px;
-		margin: 0;
-		padding: 0;
-		border-radius: 4px;
-		border: 1px solid var(--border);
-		background: var(--bg-elevated);
-		cursor: pointer;
-	}
-
-	.cb-input:checked {
-		background: var(--gold);
-		border-color: var(--gold);
-	}
-
-	.cb-check {
-		position: absolute;
-		top: 50%;
-		left: 50%;
-		transform: translate(-50%, -50%);
-		color: oklch(0.2 0.03 80);
-		pointer-events: none;
-	}
-
 	.form-grid {
 		display: grid;
 		grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -361,5 +322,12 @@
 		font-size: 11px;
 		color: var(--text-dim);
 		margin: 0;
+	}
+
+	@media (max-width: 640px) {
+		.form-grid,
+		.upload-grid {
+			grid-template-columns: minmax(0, 1fr);
+		}
 	}
 </style>

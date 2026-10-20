@@ -126,12 +126,13 @@
 
 			{#if status}<p class="status error">{status}</p>{/if}
 
-			<div class="btn-col">
+			<div class="form-actions">
 				<button
 					class="btn-common btn-play"
 					class:btn-loading={creatingTournament}
 					onclick={handleCreateTournament}>{$_("common.create")}</button
 				>
+				<a class="btn-common" href={resolve("/tournaments")}>{$_("common.cancel")}</a>
 			</div>
 		{:else}
 			<p class="notice">{$_("pageTournamentsCreate.noPermission")}</p>
@@ -140,22 +141,9 @@
 </div>
 
 <style>
-	.main-content {
-		padding: 24px 28px;
-		gap: 22px;
-	}
-
 	.page-title {
 		font-size: 20px;
 		padding-bottom: 16px;
 	}
 
-	.btn-col {
-		margin-top: 0;
-		align-items: flex-start;
-	}
-
-	.btn-col .btn-common {
-		padding: 0 28px;
-	}
 </style>

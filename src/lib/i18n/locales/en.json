@@ -1,24 +1,33 @@
 {
 	"common": {
+		"approveRegistration": "Approve registration",
+		"revokeApproval": "Revoke approval",
+		"singleElimination": "Single elimination",
+		"doubleElimination": "Double elimination",
+		"notSet": "Not set",
+		"versus": "vs",
 		"cancel": "Cancel",
 		"save": "Save",
 		"close": "Close",
+		"imagePreview": "Image preview",
+		"unexpectedError": "Something went wrong. Try again.",
+		"discard": "Discard",
 		"delete": "Delete",
 		"confirm": "Confirm",
 		"edit": "Edit",
 		"add": "Add",
 		"create": "Create",
 		"back": "Back",
-		"loading": "Loading...",
+		"loading": "Loading…",
 		"yes": "Yes",
 		"no": "No"
 	},
 	"header": {
 		"home": "Home",
-		"tournamentArchive": "Tournament Archive",
+		"tournamentArchive": "Tournament archive",
 		"teams": "Teams",
-		"matchHistory": "Match History",
-		"communityCost": "Community Cost",
+		"matchHistory": "Match history",
+		"communityCost": "Community cost",
 		"language": "Language"
 	},
 	"tournamentForm": {
@@ -41,14 +50,15 @@
 	"avatarPickerPopup": {
 		"title": "Choose an avatar",
 		"searchLabel": "Search avatar",
-		"searchPlaceholder": "Search...",
+		"searchPlaceholder": "Search…",
 		"noResults": "No results found"
 	},
 	"tournamentCard": {
+		"registrationOpens": "Registration opens {date}",
 		"registrationUntil": "Registration until {date}",
 		"startsOn": "Starts {date}",
 		"ongoing": "Tournament in progress",
-		"ended": "Tournament ended"
+		"ended": "Tournament finished"
 	},
 	"teamDetailsPopup": {
 		"confirmDelete": "Delete team \"{name}\"? This action cannot be undone.",
@@ -56,6 +66,7 @@
 		"player2Label": "Player 2"
 	},
 	"pageCosts": {
+		"weaponsTab": "W-Engines",
 		"importSuccess": "Import complete.",
 		"agentsTab": "Agents",
 		"exportCsv": "Export CSV",
@@ -63,23 +74,24 @@
 		"importCsv": "Import CSV"
 	},
 	"pageTeams": {
+		"noResults": "No teams match your search.",
 		"title": "Teams",
-		"searchPlaceholder": "Search...",
+		"searchPlaceholder": "Search…",
 		"noTeams": "No teams yet"
 	},
 	"pageTeamsMine": {
-		"title": "My Teams",
-		"createTeamButton": "Create Team",
+		"title": "My teams",
+		"createTeamButton": "Create team",
 		"loginPrompt": "Log in to see your teams.",
 		"noTeams": "You don't have any teams yet"
 	},
 	"pageDiscordCallback": {
 		"errorLabel": "Error: {error}",
-		"redirecting": "Returning to the home page...",
-		"connecting": "Connecting Discord..."
+		"redirecting": "Returning to the home page…",
+		"connecting": "Connecting Discord…"
 	},
 	"pageTournamentsCreate": {
-		"title": "Create Tournament",
+		"title": "Create tournament",
 		"noPermission": "You don't have permission to view this page."
 	},
 	"pageAdmin": {
@@ -93,7 +105,7 @@
 		"roleModerator": "Moderator",
 		"empty": "No moderators or admins yet.",
 		"promoteLabel": "Promote to moderator",
-		"searchPlayerPlaceholder": "Search player...",
+		"searchPlayerPlaceholder": "Search player…",
 		"promoteButton": "Promote",
 		"demoteButton": "Demote",
 		"promoteConfirm": "Promote {name} to moderator?",
@@ -101,30 +113,30 @@
 		"selectPlayer": "Select a player"
 	},
 	"pageTournaments": {
-		"title": "Tournament Archive",
+		"title": "Tournament archive",
 		"noTournaments": "No tournaments yet"
 	},
 	"pageHistory": {
-		"title": "Full History"
+		"title": "Full history"
 	},
 	"pageHistoryDetail": {
 		"title": "Matches"
 	},
 	"teamFormPopup": {
-		"editTitle": "Edit Team",
-		"createTitle": "Create Team",
-		"chooseLogo": "Choose Logo",
+		"editTitle": "Edit team",
+		"createTitle": "Create team",
+		"chooseLogo": "Choose logo",
 		"logoHint": "Leave empty to keep the current logo",
 		"nameLabel": "Name",
 		"namePlaceholder": "Team name",
 		"partnerLabel": "Partner",
 		"searchPartnerLabel": "Search for partner",
-		"searchPlaceholder": "Search...",
+		"searchPlaceholder": "Search…",
 		"selectPlayerOption": "Select a player",
 		"fileTooLarge": "File is too large, {maxSize}MB max"
 	},
 	"settingsPopup": {
-		"title": "Account Settings",
+		"title": "Account settings",
 		"avatarHint": "Click to change your avatar",
 		"emailLabel": "Email",
 		"usernameLabel": "Nickname",
@@ -148,9 +160,9 @@
 		"newTag": "new",
 		"costProposalTooltip": "There is a proposal to change the cost",
 		"addAgent": "Add agent",
-		"rejectedChangesTitle": "Rejected Changes",
+		"rejectedChangesTitle": "Rejected changes",
 		"noRejectedProposals": "No rejected proposals yet.",
-		"approvedChangesTitle": "Approved Changes",
+		"approvedChangesTitle": "Approved changes",
 		"noApprovedProposals": "No approved proposals yet."
 	},
 	"tournamentRegistrationPopup": {
@@ -164,7 +176,7 @@
 		"rosterNameLabel": "Roster name",
 		"rosterScreenshotLabel": "Roster screenshot",
 		"hoyolabScreenshotLabel": "HoYoLAB characters screenshot",
-		"teamRegistrationTitle": "Team Registration",
+		"teamRegistrationTitle": "Team registration",
 		"player1Fallback": "Player 1",
 		"player2Fallback": "Player 2",
 		"registrationTitle": "Registration"
@@ -177,21 +189,21 @@
 		"tournamentStarted": "The tournament has already started, registration is closed.",
 		"registrationClosed": "Registration for the tournament is closed.",
 		"prefillButton": "Fill from previous registration",
-		"awarenessRequired": "You haven't ACKNOWLEDGED it.",
+		"awarenessRequired": "You haven't acknowledged the rules.",
 		"fillAllFields": "Please fill in all fields",
 		"fileTooLarge": "File is too large, {maxSize}MB max",
 		"awarenessPrefix": "Yes, I have fully read the rules and understand the tournament runs from",
 		"awarenessBetween": "to",
-		"updateRegistration": "Update Registration",
+		"updateRegistration": "Update registration",
 		"register": "Register"
 	},
 	"sidePanel": {
-		"login": "Log In",
+		"login": "Log in",
 		"settings": "Settings",
-		"myTeams": "My Teams",
-		"myHistory": "My History",
-		"logout": "Log Out",
-		"leagueCodeTitle": "🏆 League Codex",
+		"myTeams": "My teams",
+		"myHistory": "My history",
+		"logout": "Log out",
+		"leagueCodeTitle": "League Codex",
 		"rules": {
 			"ranks": "<b>Ranks:</b> <span class=\"tier-badge t-newbie\">NEWBIE</span> <b>1000+</b>, <span class=\"tier-badge t-mid\">MID</span> <b>1200+</b>, <span class=\"tier-badge t-high\">HIGH</span> <b>1400+</b>.",
 			"qualification": "<b>Qualification:</b> To enter <span class=\"tier-badge t-mid\">MID TIER</span> you need <b>1200</b> ELO. For <span class=\"tier-badge t-high\">HIGH TIER</span> it's enough to reach <b>1400</b> ELO.",
@@ -213,7 +225,7 @@
 			"negative": "Negative"
 		},
 		"status": {
-			"pending": "Under Review",
+			"pending": "Under review",
 			"approved": "Approved",
 			"rejected": "Rejected"
 		},
@@ -223,7 +235,7 @@
 			"mixed": "mixed reception"
 		},
 		"approvalProgressTooltip": "Progress toward community approval",
-		"costChangeTitle": "Cost Change",
+		"costChangeTitle": "Cost change",
 		"currentRow": "Current",
 		"proposedRow": "Proposed",
 		"reviewsHeading": "Reviews ({count})",
@@ -232,13 +244,13 @@
 		"discussionWithCount": "Discussion ({count})",
 		"discussionStart": "Discuss",
 		"noCommentsYet": "No comments yet.",
-		"commentPlaceholder": "Write a comment...",
+		"commentPlaceholder": "Write a comment…",
 		"send": "Send",
 		"reviewCommentPlaceholder": "Review comment",
 		"submitting": "Submitting…",
-		"updateReview": "Update Review",
-		"addReview": "Add Review",
-		"leaveReview": "Leave a Review",
+		"updateReview": "Update review",
+		"addReview": "Add review",
+		"leaveReview": "Leave a review",
 		"loginToReview": "Log in to leave a review.",
 		"moderationTitle": "Moderation",
 		"approve": "Approve",
@@ -310,13 +322,13 @@
 	"tournamentFormFields": {
 		"sectionBasic": "Basics",
 		"nameLabel": "Name",
-		"registrationTypeLabel": "Registration type",
+		"registrationTypeLabel": "Format",
 		"gameModeLabel": "Game mode",
 		"descriptionLabel": "Description",
 		"descriptionPlaceholder": "Markdown supported…",
 		"previewLabel": "Preview",
 		"sectionFormat": "Format",
-		"tournamentTypeLabel": "Tournament type",
+		"tournamentTypeLabel": "Bracket type",
 		"breakTiesLabel": "Break ties with placement matches",
 		"placeLabel": "Place",
 		"fixedEloLabel": "Fixed ELO for win/loss",
@@ -341,35 +353,37 @@
 	"tournamentAddTeamPopup": {
 		"title": "Add team",
 		"searchLabel": "Search team",
-		"searchPlaceholder": "Search team...",
+		"searchPlaceholder": "Search team…",
 		"teamLabel": "Team",
 		"selectTeamOption": "Select a team"
 	},
 	"tournamentAddPlayerPopup": {
 		"title": "Add player",
 		"searchLabel": "Search player",
-		"searchPlaceholder": "Search player...",
+		"searchPlaceholder": "Search player…",
 		"playerLabel": "Player",
 		"selectPlayerOption": "Select a player"
 	},
 	"adminPanel": {
+		"player1Label": "Player 1",
+		"player2Label": "Player 2",
 		"title": "Control Panel",
-		"createTournament": "Create Tournament",
-		"adminPageButton": "Admin Page",
-		"applyResults": "Apply Results",
-		"setTimerTooltip": "Set Timer",
+		"createTournament": "Create tournament",
+		"adminPageButton": "Admin page",
+		"applyResults": "Apply results",
+		"setTimerTooltip": "Set timer",
 		"timerButton": "Timer",
-		"addPlayerTooltip": "Add Player",
+		"addPlayerTooltip": "Add player",
 		"addPlayerButton": "Player",
-		"matchRecordingLabel": "Record Match",
-		"searchPlayer1Placeholder": "Search Player 1...",
-		"searchPlayer2Placeholder": "Search Player 2...",
-		"eloForecastButton": "ELO Forecast",
-		"player1WinOption": "Player 1 Wins",
-		"player2WinOption": "Player 2 Wins",
-		"registerMatchButton": "Register Match",
-		"techLossButton": "Tech Loss",
-		"resetSeasonButton": "Reset Season",
+		"matchRecordingLabel": "Record match",
+		"searchPlayer1Placeholder": "Search player 1…",
+		"searchPlayer2Placeholder": "Search player 2…",
+		"eloForecastButton": "ELO forecast",
+		"player1WinOption": "Player 1 wins",
+		"player2WinOption": "Player 2 wins",
+		"registerMatchButton": "Register match",
+		"techLossButton": "Tech loss",
+		"resetSeasonButton": "Reset season",
 		"setTimerPrompt": "How many hours until it ends?",
 		"addPlayerPrompt": "Enter the player's nickname:",
 		"playerNameTooShort": "Too few characters",
@@ -379,7 +393,7 @@
 		"resetSeasonPrompt": "Season name for the archive:",
 		"backfillConfirm": "Recalculate the last match date for all players?",
 		"backfillDone": "Players updated: {count}",
-		"finalizeConfirm": "Apply the points?"
+		"finalizeConfirm": "Add all ELO changes still pending from tournaments to players' ratings? This can't be undone."
 	},
 	"tournamentMemberRegistrationFields": {
 		"noImageInClipboard": "There is no image in the clipboard",
@@ -388,20 +402,20 @@
 		"prizeNotRequired": "Not required",
 		"prizeUidPlaceholder": "UID for the prize",
 		"darteNicknameLabel": "Nexus Nickname",
-		"dartePresetOnDarteLabel": "Preset Name on Nexus",
-		"rosterNameLabel": "Roster Name",
-		"rosterScreenshotLabel": "Roster Screenshot",
+		"dartePresetOnDarteLabel": "Preset name on Nexus",
+		"rosterNameLabel": "Roster name",
+		"rosterScreenshotLabel": "Roster screenshot",
 		"screenshotPreviewPlaceholder": "Screenshot preview",
-		"chooseFileButton": "Choose File",
+		"chooseFileButton": "Choose file",
 		"pasteButton": "Paste",
 		"keepEmptyHint": "Leave empty to keep the current screenshot",
-		"hoyolabScreenshotLabel": "Hoyolab Character Screenshot"
+		"hoyolabScreenshotLabel": "HoYoLAB character screenshot"
 	},
 	"pageTournamentRegisterTeam": {
 		"notAware": "You have not acknowledged the rules.",
 		"fillAllFields": "Fill in all fields for both players",
 		"fileTooLarge": "File is too large, maximum {max}MB",
-		"pageTitle": "Team Registration: {name}",
+		"pageTitle": "Team registration: {name}",
 		"noPermission": "You do not have permission to view this page.",
 		"loginRequired": "Log in to register for the tournament.",
 		"tournamentStarted": "The tournament has already started, registration is closed.",
@@ -415,49 +429,52 @@
 		"player2Label": "Player 2 ({name})",
 		"awarenessPrefix": "Yes, we have fully read the rules, and understand that the tournament runs from",
 		"awarenessBetween": "to",
-		"updateRegistrationButton": "Update Registration",
+		"updateRegistrationButton": "Update registration",
 		"registerButton": "Register"
 	},
 	"communityCostsTable": {
-		"title": "Community Cost",
+		"title": "Community cost",
 		"pendingChangeTooltip": "There is a proposed cost change",
-		"rejectedHeading": "Rejected Changes",
+		"rejectedHeading": "Rejected changes",
 		"noRejected": "No rejected proposals yet.",
-		"approvedHeading": "Approved Changes",
+		"approvedHeading": "Approved changes",
 		"noApproved": "No approved proposals yet."
 	},
 	"playerProfilePopup": {
 		"playerNotFound": "Player not found",
 		"copyTooltip": "Copy",
 		"copied": "Copied",
-		"gamesPlayed": "Games Played",
-		"winRate": "Win Rate",
+		"gamesPlayed": "Games played",
+		"winRate": "Win rate",
 		"wins": "Wins",
 		"losses": "Losses",
-		"tournamentsPlayed": "Tournaments Played",
-		"tournamentsInSeason": "Tournaments This Season",
-		"matchHistory": "Match History"
+		"tournamentsPlayed": "Tournaments played",
+		"tournamentsInSeason": "Tournaments this season",
+		"matchHistory": "Match history"
 	},
 	"historyList": {
+		"previous": "Previous",
+		"openMatchLabel": "Open match",
 		"confirmDelete": "Delete this entry? ELO/points and the win/loss will be reverted.",
 		"legacyDivider": "Legacy history (may contain errors)",
 		"eloAdjustment": "ELO Adjustment",
-		"techLoss": "Tech Loss",
+		"techLoss": "Tech loss",
 		"tournament": "Tournament",
 		"noGames": "No games yet",
 		"pageLabel": "Page {page}",
 		"next": "Next"
 	},
 	"loginPopup": {
-		"resetPasswordTitle": "Reset Password",
+		"emailLabel": "Email",
+		"resetPasswordTitle": "Reset password",
 		"checkEmailMessage": "Check your email (including spam)",
-		"sendCode": "Send Code",
+		"sendCode": "Send reset link",
 		"backToLogin": "Back to login",
-		"title": "Log In",
+		"title": "Log in",
 		"discordLogin": "Log in with Discord",
 		"orByEmail": "or by email",
 		"passwordLabel": "Password",
-		"login": "Log In",
+		"login": "Log in",
 		"forgotPassword": "Forgot password?"
 	},
 	"contributionProposalPopup": {
@@ -469,11 +486,11 @@
 		"reasonPlaceholder": "Why should the cost be changed?",
 		"loginRequired": "Log in to propose a change.",
 		"submitting": "Submitting…",
-		"submitProposal": "Submit Proposal"
+		"submitProposal": "Submit proposal"
 	},
 	"pageHome": {
-		"timeUntilEnd": "League Ends In",
-		"seasonEnded": "SEASON ENDED",
+		"timeUntilEnd": "League ends in",
+		"seasonEnded": "Season ended",
 		"days": "days",
 		"hours": "hrs",
 		"minutes": "min",
@@ -481,19 +498,23 @@
 		"tournamentsHeading": "Tournaments:",
 		"archiveTitle": "Archive: {name}",
 		"leaderboardTitle": "ZZZ Leaderboard",
-		"currentLeague": "Current League",
+		"currentLeague": "Current league",
 		"showInactivePlayers": "Show inactive players",
-		"searchPlaceholder": "Search...",
-		"seasonArchive": "Season Archive:"
+		"searchPlaceholder": "Search…",
+		"seasonArchive": "Season archive:"
 	},
 	"contributionMenu": {
 		"statusApproved": "Approved",
 		"statusRejected": "Rejected",
-		"statusPending": "Pending Review",
+		"statusPending": "Pending review",
 		"emptyState": "No cost change proposals yet.",
-		"proposeChange": "Propose a Change"
+		"proposeChange": "Propose a change"
 	},
 	"pageTournamentDetail": {
+		"openMatchLabel": "Open match: {p1} vs {p2}",
+		"adminToolsHeading": "Admin tools",
+		"deleteTournamentHint": "Removes the tournament with its matches and registrations. This can't be undone.",
+		"notFound": "Tournament not found.",
 		"statusRegistrationOpen": "Registration open",
 		"statusRegistrationClosed": "Registration closed",
 		"statusBracketCreated": "Bracket created, awaiting start",
@@ -508,9 +529,9 @@
 		"confirmDeleteTournament": "Delete tournament \"{name}\"? This action cannot be undone.",
 		"noViewPermission": "You don't have permission to view this page.",
 		"divisionLabel": "Bracket {index}",
-		"specTournamentType": "Tournament type",
+		"specTournamentType": "Format",
 		"specGameMode": "Game mode",
-		"specSystem": "Format",
+		"specSystem": "Bracket type",
 		"specCostRange": "Cost range",
 		"specMinCharacters": "Min. characters",
 		"specEloChange": "Elo for win/loss",
@@ -532,18 +553,20 @@
 		"registerButton": "Register",
 		"myRegistrationButton": "My registration",
 		"cancelRegistrationButton": "Cancel registration",
-		"championLabel": "Tournament Champion",
+		"championLabel": "Tournament champion",
 		"bracketHeading": "Bracket",
 		"collapseLabel": "Collapse",
 		"expandLabel": "Expand",
 		"gamesHeading": "Matches",
 		"showCompletedMatchesLabel": "Show completed matches",
 		"showOnlyMyMatchesLabel": "Show only my matches",
-		"searchPlaceholder": "Search...",
+		"searchPlaceholder": "Search…",
 		"noMatchesFound": "No matches found",
 		"participantsHeading": "Participants"
 	},
 	"pageTournamentSplit": {
+		"moveToLabel": "Move {name} to",
+		"unassignedOption": "Unassigned",
 		"errorNotEnoughApproved": "Not enough approved players to split (need at least 4, currently {count})",
 		"errorMinDivisions": "There must be at least 2 brackets",
 		"errorTooManyDivisions": "Too many brackets: maximum {max} with {count} players",
@@ -564,7 +587,7 @@
 		"unassignedHeading": "Unassigned ({count})",
 		"divisionHeading": "Bracket {index}",
 		"playersLabel": "Players",
-		"dragHint": "Drag players between columns to assign them.",
+		"dragHint": "Drag players between columns, or pick a bracket from the menu on each player.",
 		"splitButton": "Split"
 	},
 	"pageTournamentEdit": {

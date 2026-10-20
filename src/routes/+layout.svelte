@@ -21,8 +21,9 @@
 	import { onAuthStateChanged } from "firebase/auth";
 	import { auth } from "$lib/firebase";
 	import { connectIfAuthenticated, disconnect, onTournamentChanged } from "$lib/signalr";
-	import ImageViwerPopup from "$lib/components/ImageViwerPopup.svelte";
+	import ImageViewerPopup from "$lib/components/ImageViewerPopup.svelte";
 	import SiteHeader from "$lib/components/Header.svelte";
+	import DialogHost from "$lib/components/DialogHost.svelte";
 	import favicon from "$lib/assets/favicon.png";
 
 	let { children } = $props();
@@ -76,4 +77,5 @@
 {#if $loginOpen}<LoginPopup />{/if}
 {#if $settingsOpen}<SettingsPopup />{/if}
 {#if profileOpen}<PlayerProfilePopup player={$profileUser} />{/if}
-{#if imageViewerOpen}<ImageViwerPopup src={$viewingImage} />{/if}
+{#if imageViewerOpen}<ImageViewerPopup src={$viewingImage} />{/if}
+<DialogHost />

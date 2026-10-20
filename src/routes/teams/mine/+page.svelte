@@ -4,15 +4,9 @@
 	import SidePanel from "$lib/components/SidePanel.svelte";
 	import TeamDetailsPopup from "$lib/components/TeamDetailsPopup.svelte";
 	import TeamFormPopup from "$lib/components/TeamFormPopup.svelte";
+	import TeamRow from "$lib/components/TeamRow.svelte";
 	import { currentUser, isAdmin } from "$lib/store";
 	import type { Team } from "$lib/types";
-	import { bustCache } from "$lib/uiCommon";
-
-	function teamInitials(name: string): string {
-		const words = name.trim().split(/\s+/).filter(Boolean);
-		if (words.length >= 2) return (words[0][0] + words[1][0]).toUpperCase();
-		return name.slice(0, 2).toUpperCase();
-	}
 
 	let teams = $state<Team[]>([]);
 	let loading = $state(true);
@@ -74,7 +68,7 @@
 		<div class="page-header">
 			<h2 class="page-title">{$_("pageTeamsMine.title")}</h2>
 			<button class="btn-common btn-play create-btn" onclick={openCreate}
-				>+ {$_("pageTeamsMine.createTeamButton")}</button
+				><svg aria-hidden="true" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> {$_("pageTeamsMine.createTeamButton")}</button
 			>
 		</div>
 
@@ -87,37 +81,7 @@
 		{:else}
 			<div class="team-list">
 				{#each teams as team (team.id)}
-					<!-- svelte-ignore a11y_click_events_have_key_events -->
-					<!-- svelte-ignore a11y_no_static_element_interactions -->
-					<div class="team-row" onclick={() => openDetails(team)}>
-						{#if team.photoUrl}
-							<img
-								class="team-logo"
-								src={bustCache(team.photoUrl)}
-								alt=""
-							/>
-						{:else}
-							<span class="team-logo placeholder"
-								>{teamInitials(team.name)}</span
-							>
-						{/if}
-						<span class="team-name">{team.name}</span>
-						<span class="team-players"
-							>{team.creator.name} & {team.player2.name}</span
-						>
-						<svg
-							class="chevron"
-							width="16"
-							height="16"
-							viewBox="0 0 24 24"
-							fill="none"
-							stroke="currentColor"
-							stroke-width="2"
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							><polyline points="9 18 15 12 9 6" /></svg
-						>
-					</div>
+					<TeamRow {team} onclick={() => openDetails(team)} />
 				{/each}
 			</div>
 		{/if}
@@ -133,11 +97,6 @@
 <TeamFormPopup bind:open={formOpen} team={editingTeam} onSaved={handleSaved} />
 
 <style>
-	.main-content {
-		padding: 24px 28px;
-		gap: 16px;
-	}
-
 	.page-header {
 		display: flex;
 		align-items: center;
@@ -171,63 +130,4 @@
 		width: 100%;
 	}
 
-	.team-row {
-		display: flex;
-		align-items: center;
-		gap: 11px;
-		height: 38px;
-		padding: 0 12px;
-		background: var(--surface-2);
-		border: 1px solid var(--border-soft);
-		border-radius: var(--r-sm);
-		cursor: pointer;
-		transition: border-color 0.12s ease;
-	}
-
-	.team-row:hover {
-		border-color: var(--gold-border);
-	}
-
-	.team-logo {
-		width: 26px;
-		height: 26px;
-		object-fit: cover;
-		border-radius: 5px;
-		flex-shrink: 0;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		font-weight: 700;
-		font-size: 10px;
-	}
-
-	.team-logo.placeholder {
-		background: var(--surface-hover);
-		color: var(--text-muted);
-	}
-
-	.team-name {
-		font-weight: 700;
-		font-size: 14px;
-		flex-shrink: 0;
-		width: 150px;
-		overflow: hidden;
-		text-overflow: ellipsis;
-		white-space: nowrap;
-	}
-
-	.team-players {
-		flex: 1;
-		color: var(--text-muted);
-		font-size: 14px;
-		min-width: 0;
-		overflow: hidden;
-		text-overflow: ellipsis;
-		white-space: nowrap;
-	}
-
-	.chevron {
-		color: var(--text-dim);
-		flex-shrink: 0;
-	}
 </style>

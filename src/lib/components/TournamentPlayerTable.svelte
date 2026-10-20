@@ -102,12 +102,16 @@
 					<td class="options-cell">
 						<button
 							class="icon-btn"
-							onclick={() =>
-								handleApprove(
-									reg.registration.id,
-									reg.registration.approved,
-								)}>⚙️</button
+							aria-label={reg.registration.approved
+								? $_("common.revokeApproval")
+								: $_("common.approveRegistration")}
+							title={reg.registration.approved
+								? $_("common.revokeApproval")
+								: $_("common.approveRegistration")}
+							onclick={() => handleApprove(reg.registration.id, reg.registration.approved)}
 						>
+							{#if reg.registration.approved}<svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>{:else}<svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>{/if}
+						</button>
 					</td>
 				{/if}
 			</tr>

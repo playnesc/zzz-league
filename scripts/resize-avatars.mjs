@@ -49,8 +49,47 @@ async function resizeDir(sourceDir, sizes) {
 	return sourceFiles.length;
 }
 
+// Pixel-exact square tiers for avatars rendered at one fixed CSS size, served via srcset so the
+// browser can paint them 1:1 with no runtime resampling. One file per device-pixel-ratio,
+// including the fractional Windows display scales (125/150/175%). Cropped center/cover to match
+// what `object-fit: cover` did before. Output: px<size>/<id>@<scale>x.webp
+//   px24 — Leaderboard (26px box minus 1px border).
+const AGENT_FIXED_SIZES = { 24: [1, 1.25, 1.5, 1.75, 2] };
+
+async function resizeDirFixed(sourceDir, fixedSizes) {
+	const entries = await readdir(sourceDir, { withFileTypes: true });
+	const sourceFiles = entries.filter((e) => e.isFile() && extname(e.name) === ".webp");
+
+	for (const [cssSize, scales] of Object.entries(fixedSizes)) {
+		const outDir = new URL(`px${cssSize}/`, sourceDir);
+		await mkdir(outDir, { recursive: true });
+
+		await Promise.all(
+			sourceFiles.flatMap((entry) =>
+				scales.map(async (scale) => {
+					const px = Math.round(Number(cssSize) * scale);
+					const input = fileURLToPath(new URL(entry.name, sourceDir));
+					const output = fileURLToPath(
+						new URL(entry.name.replace(".webp", `@${scale}x.webp`), outDir),
+					);
+					await sharp(input)
+						.resize({ width: px, height: px, fit: "cover", kernel: sharp.kernel.lanczos3 })
+						// Full-res chroma: at 24-48px, 4:2:0 subsampling visibly smears edges.
+						.webp({ quality: 90, smartSubsample: true })
+						.toFile(output);
+				}),
+			),
+		);
+
+		console.log(
+			`  px${cssSize}/ (${scales.join("x, ")}x): ${sourceFiles.length * scales.length} files -> ${fileURLToPath(outDir)}`,
+		);
+	}
+}
+
 console.log("Resizing agent avatars...");
 const agentCount = await resizeDir(AGENTS_DIR, AGENT_SIZES);
+await resizeDirFixed(AGENTS_DIR, AGENT_FIXED_SIZES);
 
 console.log("Resizing weapon avatars...");
 const weaponCount = await resizeDir(WEAPONS_DIR, WEAPON_SIZES);

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { modal } from "$lib/actions/modal";
 	import { bustCache, closeImagePopup } from "$lib/uiCommon";
 	import { _ } from "$lib/i18n";
 
@@ -11,12 +12,8 @@
 	}
 </script>
 
-<!-- svelte-ignore a11y_click_events_have_key_events -->
-<!-- svelte-ignore a11y_no_static_element_interactions -->
-<div class="popup" onclick={close}>
-	<!-- svelte-ignore a11y_click_events_have_key_events -->
-	<!-- svelte-ignore a11y_no_static_element_interactions -->
-	<div class="image-popup-frame" onclick={(e) => e.stopPropagation()}>
+<div class="popup">
+	<div class="image-popup-frame" use:modal={{ onclose: close, label: alt || $_("common.imagePreview") }}>
 		<button class="close-btn" onclick={close} aria-label={$_("common.close")}>
 			<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
 		</button>
@@ -38,7 +35,7 @@
 
 <style>
 	.popup {
-		background: oklch(0.08 0.004 95 / 0.92);
+		background: var(--overlay-strong);
 	}
 
 	.image-popup-frame {
@@ -64,7 +61,7 @@
 		background: oklch(0.10 0.005 95 / 0.55);
 		border: none;
 		padding: 0;
-		color: #fff;
+		color: var(--text);
 		cursor: pointer;
 		transition: background 0.15s ease;
 	}
@@ -79,6 +76,17 @@
 		object-fit: contain;
 		border-radius: var(--r-lg);
 		border: 1px solid var(--border);
+	}
+
+	@media (max-width: 640px) {
+		.image-popup-frame {
+			max-width: 100%;
+		}
+
+		.close-btn {
+			top: 6px;
+			right: 6px;
+		}
 	}
 
 	img.hidden {
@@ -96,15 +104,9 @@
 	.spinner {
 		width: 40px;
 		height: 40px;
-		border: 3px solid #333;
+		border: 3px solid var(--border);
 		border-top-color: var(--gold);
 		border-radius: 50%;
-		animation: spin 0.8s linear infinite;
-	}
-
-	@keyframes spin {
-		to {
-			transform: rotate(360deg);
-		}
+		animation: btn-spin 0.7s linear infinite;
 	}
 </style>

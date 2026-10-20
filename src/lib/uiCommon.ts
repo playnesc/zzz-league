@@ -84,10 +84,20 @@ export function closeImagePopup() {
 	viewingImage.set("");
 }
 
+// Tier values as stored on tournaments (minTier/maxTier). Tier names are league proper names
+// and stay in English in every locale.
+export const TIERS = [
+	{ value: 0, cls: "t-newbie", name: "NEWBIE" },
+	{ value: 100, cls: "t-mid", name: "MID TIER" },
+	{ value: 1000, cls: "t-high", name: "HIGH TIER" },
+] as const;
+
+export function tierInfo(value: number): { cls: string; name: string } | undefined {
+	return TIERS.find((t) => t.value === value);
+}
+
 export function getTier(p: { isMidConfirmed: boolean; isHighConfirmed: boolean }): { cls: string; name: string } {
-	if (p.isHighConfirmed) return { cls: "t-high", name: "HIGH TIER" };
-	if (p.isMidConfirmed) return { cls: "t-mid", name: "MID TIER" };
-	return { cls: "t-newbie", name: "NEWBIE" };
+	return tierInfo(p.isHighConfirmed ? 1000 : p.isMidConfirmed ? 100 : 0)!;
 }
 
 export function getLvl(elo: number): number {

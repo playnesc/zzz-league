@@ -269,13 +269,14 @@
 </script>
 
 <div class="card weapon-card">
-	<h2>W-Engines</h2>
+	<h2>{$_("pageCosts.weaponsTab")}</h2>
 
 	<div class="specialty-tabs">
 		{#each specialties as s (s.id)}
 			<button
 				class="specialty-tab"
 				class:active={activeSpecialty === s.id}
+				aria-pressed={activeSpecialty === s.id}
 				onclick={() => (activeSpecialty = s.id)}
 			>
 				{#if pendingCountBySpecialty[s.id]}
@@ -324,7 +325,7 @@
 											class="contrib-alert"
 											style="background:{contributionColor(row.baseScore)}"
 											title={$_("weaponCostsTable.baseCostProposalTooltip")}
-										>!</span>
+										aria-hidden="true">!</span><span class="visually-hidden">{$_("weaponCostsTable.baseCostProposalTooltip")}</span>
 									{/if}
 								</button>
 								{#if row.overrideRows.length > 0}
@@ -333,6 +334,8 @@
 										class="group-toggle"
 										onclick={() => toggleGroup(row.engineId)}
 										title={collapsed ? $_("weaponCostsTable.showAgentCosts") : $_("weaponCostsTable.hideAgentCosts")}
+										aria-expanded={!collapsed}
+										aria-label={collapsed ? $_("weaponCostsTable.showAgentCosts") : $_("weaponCostsTable.hideAgentCosts")}
 									>
 										<svg class="group-toggle-caret" class:collapsed width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
 										{row.overrideRows.length}
@@ -341,14 +344,14 @@
 												class="contrib-alert small"
 												style="background:{contributionColor(row.overridesPendingScore)}"
 												title={$_("weaponCostsTable.innerProposalsTooltip")}
-											>!</span>
+											aria-hidden="true">!</span><span class="visually-hidden">{$_("weaponCostsTable.innerProposalsTooltip")}</span>
 										{/if}
 									</button>
 								{/if}
 							</div>
 							{#each row.baseCosts.slice(0, 5) as value, i (i)}
 								<div class="weapon-cell col-{i}" class:empty={value >= 9999}>
-									{value}
+									{#if value >= 9999}<span title={$_("common.notSet")}>—</span>{:else}{value}{/if}
 								</div>
 							{/each}
 						</div>
@@ -370,19 +373,20 @@
 												class="contrib-alert small"
 												style="background:{contributionColor(o.pendingScore)}"
 												title={$_("weaponCostsTable.costProposalTooltip")}
-											>!</span>
+											aria-hidden="true">!</span><span class="visually-hidden">{$_("weaponCostsTable.costProposalTooltip")}</span>
 										{/if}
 									</button>
 									{#each o.costs as value, i (i)}
 										<div class="weapon-cell sub-cell col-{i}" class:empty={value >= 9999}>
-											{value}
+											{#if value >= 9999}<span title={$_("common.notSet")}>—</span>{:else}{value}{/if}
 										</div>
 									{/each}
 								</div>
 							{/each}
 
 							<button type="button" class="add-agent-row" onclick={() => openAddAgentFlow(row)}>
-								+ {$_("weaponCostsTable.addAgent")}
+								<svg aria-hidden="true" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+								{$_("weaponCostsTable.addAgent")}
 							</button>
 						{/if}
 					</div>
@@ -486,7 +490,7 @@
 		border: 1px solid var(--border);
 		color: var(--text-muted);
 		padding: 6px 13px;
-		border-radius: 999px;
+		border-radius: var(--r-pill);
 		font-size: 12px;
 		font-weight: 600;
 		font-family: inherit;
@@ -501,9 +505,9 @@
 		min-width: 18px;
 		height: 18px;
 		padding: 0 4px;
-		border-radius: 9px;
+		border-radius: var(--r-pill);
 		background: var(--danger);
-		color: #fff;
+		color: var(--on-danger);
 		font-size: 11px;
 		font-weight: 800;
 		display: flex;
@@ -513,7 +517,7 @@
 	}
 
 	.specialty-tab:hover {
-		border-color: var(--border-soft);
+		border-color: var(--gold-border);
 		color: var(--text);
 	}
 
@@ -553,7 +557,7 @@
 
 	.toggle-all-btn:hover {
 		color: var(--text);
-		border-color: var(--border-soft);
+		border-color: var(--gold-border);
 	}
 
 	.weapon-scroll {
@@ -619,7 +623,7 @@
 		background: var(--surface-2);
 		border: 1px solid var(--border-soft);
 		padding: 4px 9px 4px 8px;
-		border-radius: 999px;
+		border-radius: var(--r-pill);
 	}
 
 	.group-toggle:hover {
@@ -698,7 +702,7 @@
 		color: var(--gold);
 		background: var(--gold-dim);
 		padding: 1px 5px;
-		border-radius: 4px;
+		border-radius: var(--r-xs);
 	}
 
 	.contrib-alert {
@@ -712,8 +716,8 @@
 		font-weight: 900;
 		font-size: 14px;
 		line-height: 1;
-		color: #fff;
-		text-shadow: 0 1px 1px rgba(0, 0, 0, 0.4);
+		color: var(--on-danger);
+		text-shadow: 0 1px 1px oklch(0 0 0 / 0.4);
 	}
 
 	.contrib-alert.small {
@@ -725,11 +729,14 @@
 	.add-agent-row {
 		all: unset;
 		box-sizing: border-box;
+		display: inline-flex;
+		align-items: center;
+		gap: 5px;
 		cursor: pointer;
 		align-self: flex-start;
-		padding: 2px 0 0 41px;
-		font-size: 11px;
-		color: var(--text-dim);
+		padding: 4px 0 4px 41px;
+		font-size: var(--fs-xs);
+		color: var(--text-muted);
 	}
 
 	.add-agent-row:hover {
@@ -750,28 +757,28 @@
 	}
 
 	.weapon-cell.col-0 {
-		background: #163a3d;
-		color: #7fd8cf;
+		background: var(--cost-0-bg);
+		color: var(--cost-0-fg);
 	}
 
 	.weapon-cell.col-1 {
-		background: #163a52;
-		color: #74c0e8;
+		background: var(--cost-1-bg);
+		color: var(--cost-1-fg);
 	}
 
 	.weapon-cell.col-2 {
-		background: #24325c;
-		color: #93a6f2;
+		background: var(--cost-2-bg);
+		color: var(--cost-2-fg);
 	}
 
 	.weapon-cell.col-3 {
-		background: #3a2c63;
-		color: #c2a4f5;
+		background: var(--cost-3-bg);
+		color: var(--cost-3-fg);
 	}
 
 	.weapon-cell.col-4 {
-		background: #55295c;
-		color: #e2a0e0;
+		background: var(--cost-4-bg);
+		color: var(--cost-4-fg);
 	}
 
 	.weapon-cell.empty {

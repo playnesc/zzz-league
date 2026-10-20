@@ -133,6 +133,7 @@
 			<button
 				class="specialty-tab"
 				class:active={activeSpecialty === s.id}
+				aria-pressed={activeSpecialty === s.id}
 				onclick={() => (activeSpecialty = s.id)}
 			>
 				{#if pendingCountBySpecialty[s.id]}
@@ -166,12 +167,12 @@
 								class="contrib-alert"
 								style="background:{contributionColor(row.pendingScore)}"
 								title={$_("communityCostsTable.pendingChangeTooltip")}
-							>!</span>
+							aria-hidden="true">!</span><span class="visually-hidden">{$_("communityCostsTable.pendingChangeTooltip")}</span>
 						{/if}
 					</button>
 					{#each row.costs as value, i (i)}
 						<div class="cost-cell col-{i}" class:empty={value >= 9999}>
-							{value}
+							{#if value >= 9999}<span title={$_("common.notSet")}>—</span>{:else}{value}{/if}
 						</div>
 					{/each}
 				</div>
@@ -265,7 +266,7 @@
 		border: 1px solid var(--border);
 		color: var(--text-muted);
 		padding: 6px 13px;
-		border-radius: 999px;
+		border-radius: var(--r-pill);
 		font-size: 12px;
 		font-weight: 600;
 		font-family: inherit;
@@ -274,7 +275,7 @@
 	}
 
 	.specialty-tab:hover {
-		border-color: var(--border-soft);
+		border-color: var(--gold-border);
 		color: var(--text);
 	}
 
@@ -292,9 +293,9 @@
 		min-width: 18px;
 		height: 18px;
 		padding: 0 4px;
-		border-radius: 9px;
+		border-radius: var(--r-pill);
 		background: var(--danger);
-		color: #fff;
+		color: var(--on-danger);
 		font-size: 11px;
 		font-weight: 800;
 		display: flex;
@@ -375,8 +376,8 @@
 		font-weight: 900;
 		font-size: 14px;
 		line-height: 1;
-		color: #fff;
-		text-shadow: 0 1px 1px rgba(0, 0, 0, 0.4);
+		color: var(--on-danger);
+		text-shadow: 0 1px 1px oklch(0 0 0 / 0.4);
 	}
 
 	.cost-avatar {
@@ -405,38 +406,38 @@
 	}
 
 	.cost-cell.col-0 {
-		background: oklch(0.32 0.06 190);
-		color: oklch(0.8 0.1 190);
+		background: var(--cost-0-bg);
+		color: var(--cost-0-fg);
 	}
 
 	.cost-cell.col-1 {
-		background: oklch(0.32 0.06 220);
-		color: oklch(0.8 0.1 220);
+		background: var(--cost-1-bg);
+		color: var(--cost-1-fg);
 	}
 
 	.cost-cell.col-2 {
-		background: oklch(0.32 0.06 250);
-		color: oklch(0.8 0.1 250);
+		background: var(--cost-2-bg);
+		color: var(--cost-2-fg);
 	}
 
 	.cost-cell.col-3 {
-		background: oklch(0.32 0.06 280);
-		color: oklch(0.8 0.1 280);
+		background: var(--cost-3-bg);
+		color: var(--cost-3-fg);
 	}
 
 	.cost-cell.col-4 {
-		background: oklch(0.32 0.06 320);
-		color: oklch(0.8 0.1 320);
+		background: var(--cost-4-bg);
+		color: var(--cost-4-fg);
 	}
 
 	.cost-cell.col-5 {
-		background: oklch(0.32 0.06 350);
-		color: oklch(0.8 0.1 350);
+		background: var(--cost-5-bg);
+		color: var(--cost-5-fg);
 	}
 
 	.cost-cell.col-6 {
-		background: oklch(0.32 0.06 20);
-		color: oklch(0.8 0.1 20);
+		background: var(--cost-6-bg);
+		color: var(--cost-6-fg);
 	}
 
 	.cost-cell.empty {

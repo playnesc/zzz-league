@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { confirmDialog, notify } from "$lib/dialogs";
+	import { modal } from "$lib/actions/modal";
 	import type { NexusMissingDto, NexusPreviewDto } from "$lib/api/dtos";
 	import { adminSetMatchResult, approveResult, previewNexusResult, type NexusSide } from "$lib/backend";
 	import { ApiError } from "$lib/api";
@@ -125,7 +127,7 @@
 		} catch (error) {
 			if (requestId === previewRequestIds[target]) {
 				draft.error = nexusErrorMessage(error);
-				if (isNexusFormatError(error)) alert(draft.error);
+				if (isNexusFormatError(error)) notify(draft.error);
 			}
 		} finally {
 			if (requestId === previewRequestIds[target]) draft.loading = false;
@@ -208,10 +210,10 @@
 			!!adminNexus.url.trim(),
 	);
 
-	function handleClose() {
+	async function handleClose() {
 		if (
 			hasUnsavedInput &&
-			!confirm($_("tournamentMatchPopup.confirmClose"))
+			!(await confirmDialog($_("tournamentMatchPopup.confirmClose"), { danger: true, confirmLabel: $_("common.discard") }))
 		) {
 			return;
 		}
@@ -222,7 +224,7 @@
 		try {
 			const files = await pasteImageFromClipboard();
 			if (!files) {
-				alert($_("tournamentMatchPopup.noImageInClipboard"));
+				notify($_("tournamentMatchPopup.noImageInClipboard"));
 				return;
 			}
 			if (target === "own") {
@@ -291,16 +293,16 @@
 			return;
 		}
 		if (!isValidResult(matchResultP1) || !isValidResult(matchResultP2)) {
-			alert(isDeadlyAssault ? $_("tournamentMatchPopup.enterScoreAboveZero") : $_("tournamentMatchPopup.enterTimeAboveZero"));
+			notify(isDeadlyAssault ? $_("tournamentMatchPopup.enterScoreAboveZero") : $_("tournamentMatchPopup.enterTimeAboveZero"));
 			return;
 		}
 		const resultScreenshot = inputScreenshot?.[0];
 		if (!resultScreenshot && !match.resultScreenshot) {
-			alert($_("tournamentMatchPopup.screenshotRequired"));
+			notify($_("tournamentMatchPopup.screenshotRequired"));
 			return;
 		}
 		if (resultScreenshot && isImageTooLarge(resultScreenshot)) {
-			alert($_("tournamentMatchPopup.fileTooLarge", { values: { max: MAX_IMAGE_SIZE_MB } }));
+			notify($_("tournamentMatchPopup.fileTooLarge", { values: { max: MAX_IMAGE_SIZE_MB } }));
 			return;
 		}
 		try {
@@ -313,7 +315,7 @@
 				resultScreenshot,
 			);
 		} catch (error) {
-			alert(error);
+			notify(error);
 		} finally {
 			isApproving = false;
 		}
@@ -325,30 +327,30 @@
 		if (url) {
 			const preview = ownNexus.preview;
 			if (!preview) {
-				alert(ownNexus.error ?? $_("tournamentMatchPopup.nexusLoading"));
+				notify(ownNexus.error ?? $_("tournamentMatchPopup.nexusLoading"));
 				return;
 			}
 			if (preview.p1IsLeft === null) {
-				alert($_("tournamentMatchPopup.nexusPickSideRequired"));
+				notify($_("tournamentMatchPopup.nexusPickSideRequired"));
 				return;
 			}
 			if (preview.countedGames === 0) {
-				alert($_("tournamentMatchPopup.nexusNoFinishedGame"));
+				notify($_("tournamentMatchPopup.nexusNoFinishedGame"));
 				return;
 			}
 			if (preview.isTie) {
-				alert($_("tournamentMatchPopup.nexusTie"));
+				notify($_("tournamentMatchPopup.nexusTie"));
 				return;
 			}
 		} else if (!match.nexusResultId) {
-			alert($_("tournamentMatchPopup.nexusLinkRequired"));
+			notify($_("tournamentMatchPopup.nexusLinkRequired"));
 			return;
 		}
 		try {
 			isApproving = true;
 			await approveResult(tournament.id, match.id, null, null, null, url || null, url ? ownNexus.p1Side : null);
 		} catch (error) {
-			alert(nexusErrorMessage(error));
+			notify(nexusErrorMessage(error));
 		} finally {
 			isApproving = false;
 		}
@@ -361,21 +363,21 @@
 	async function handleAdminSetResult() {
 		if (adminAction) return;
 		if (!isValidResult(matchResultP1) || !isValidResult(matchResultP2)) {
-			alert(isDeadlyAssault ? $_("tournamentMatchPopup.enterScoreAboveZero") : $_("tournamentMatchPopup.enterTimeAboveZero"));
+			notify(isDeadlyAssault ? $_("tournamentMatchPopup.enterScoreAboveZero") : $_("tournamentMatchPopup.enterTimeAboveZero"));
 			return;
 		}
 		// Screenshots only for team matches; solo matches can attach a Nexus link instead.
 		const adminScreenshot = isTeamMatch ? (adminInputScreenshot?.[0] ?? null) : null;
 		if (adminScreenshot && isImageTooLarge(adminScreenshot)) {
-			alert($_("tournamentMatchPopup.fileTooLarge", { values: { max: MAX_IMAGE_SIZE_MB } }));
+			notify($_("tournamentMatchPopup.fileTooLarge", { values: { max: MAX_IMAGE_SIZE_MB } }));
 			return;
 		}
 		const adminNexusUrl = isTeamMatch ? "" : adminNexus.url.trim();
 		if (adminNexusUrl && adminNexus.error) {
-			alert(adminNexus.error);
+			notify(adminNexus.error);
 			return;
 		}
-		if (!confirm($_("tournamentMatchPopup.confirmAdminSetResult"))) return;
+		if (!(await confirmDialog($_("tournamentMatchPopup.confirmAdminSetResult"), { confirmLabel: $_("tournamentMatchPopup.recordResultButton") }))) return;
 		try {
 			adminAction = "result";
 			await adminSetMatchResult(
@@ -390,7 +392,7 @@
 				adminNexusUrl ? adminNexus.p1Side : null,
 			);
 		} catch (error) {
-			alert(nexusErrorMessage(error));
+			notify(nexusErrorMessage(error));
 		} finally {
 			adminAction = null;
 		}
@@ -402,9 +404,10 @@
 			? getTeamLabel(side === "p1" ? match.p1TeamId : match.p2TeamId)
 			: getPlayerName(side === "p1" ? match.p1 : match.p2);
 		if (
-			!confirm(
-				$_("tournamentMatchPopup.confirmTechLoss", { values: { loserName } }),
-			)
+			!(await confirmDialog($_("tournamentMatchPopup.confirmTechLoss", { values: { loserName } }), {
+					danger: true,
+					confirmLabel: $_("tournamentMatchPopup.techLossButton"),
+				}))
 		)
 			return;
 		try {
@@ -430,7 +433,7 @@
 				);
 			}
 		} catch (error) {
-			alert(error);
+			notify(error);
 		} finally {
 			adminAction = null;
 		}
@@ -455,7 +458,7 @@
 				match.techLossUid ?? match.techLossTeamId,
 			)}">{getSideLabel(match.p1, match.p1TeamId)}</span
 		>
-		<span class="match-vs">vs</span>
+		<span class="match-vs">{$_("common.versus")}</span>
 		<span
 			class="match-player-name match-player-right {getPlayerClass(
 				match.p2 ?? match.p2TeamId,
@@ -606,13 +609,9 @@
 	</div>
 {/snippet}
 
-<!-- svelte-ignore a11y_click_events_have_key_events -->
-<!-- svelte-ignore a11y_no_static_element_interactions -->
-<div class="popup" onclick={handleClose}>
-	<div class="popup-stack">
-		<!-- svelte-ignore a11y_click_events_have_key_events -->
-		<!-- svelte-ignore a11y_no_static_element_interactions -->
-		<div class="card match-card" onclick={(e) => e.stopPropagation()}>
+<div class="popup">
+	<div class="popup-stack" use:modal={handleClose}>
+		<div class="card match-card">
 			{@render closeRow()}
 			{@render matchHeader()}
 
@@ -701,9 +700,7 @@
 		</div>
 
 		{#if canAdminSetResult}
-			<!-- svelte-ignore a11y_click_events_have_key_events -->
-			<!-- svelte-ignore a11y_no_static_element_interactions -->
-			<div class="card match-card admin-card" onclick={(e) => e.stopPropagation()}>
+			<div class="card match-card admin-card">
 				{@render closeRow()}
 				{@render matchHeader()}
 
@@ -773,8 +770,19 @@
 	.popup-stack {
 		display: flex;
 		flex-direction: row;
+		flex-wrap: wrap;
+		justify-content: center;
 		align-items: center;
 		gap: 16px;
+		max-width: 100%;
+		max-height: calc(100dvh - 24px);
+		overflow-y: auto;
+	}
+
+	@media (max-width: 900px) {
+		.popup-stack {
+			align-items: stretch;
+		}
 	}
 
 	.match-card {
@@ -785,12 +793,6 @@
 		flex-direction: column;
 		align-items: stretch;
 		gap: 16px;
-	}
-
-	.close-row {
-		display: flex;
-		justify-content: flex-end;
-		margin-bottom: -8px;
 	}
 
 	.tournament-label {
@@ -973,7 +975,7 @@
 		justify-content: center;
 		gap: 6px;
 		padding: 6px 10px;
-		border-radius: 999px;
+		border-radius: var(--r-pill);
 		font-size: 11px;
 		font-weight: 700;
 		flex: 1;
@@ -991,10 +993,6 @@
 	.approval-pill.pending {
 		background: var(--surface-2);
 		color: var(--text-dim);
-	}
-
-	.btn-block {
-		width: 100%;
 	}
 
 	.admin-card {

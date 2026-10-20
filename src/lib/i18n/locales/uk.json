@@ -1,15 +1,24 @@
 {
 	"common": {
+		"approveRegistration": "Підтвердити реєстрацію",
+		"revokeApproval": "Скасувати підтвердження",
+		"singleElimination": "Одинарне вибування",
+		"doubleElimination": "Подвійне вибування",
+		"notSet": "Не задано",
+		"versus": "vs",
 		"cancel": "Скасувати",
 		"save": "Зберегти",
 		"close": "Закрити",
+		"imagePreview": "Перегляд зображення",
+		"unexpectedError": "Щось пішло не так. Спробуйте ще раз.",
+		"discard": "Скинути",
 		"delete": "Видалити",
 		"confirm": "Підтвердити",
 		"edit": "Редагувати",
 		"add": "Додати",
 		"create": "Створити",
 		"back": "Назад",
-		"loading": "Завантаження...",
+		"loading": "Завантаження…",
 		"yes": "Так",
 		"no": "Ні"
 	},
@@ -41,10 +50,11 @@
 	"avatarPickerPopup": {
 		"title": "Оберіть аватар",
 		"searchLabel": "Пошук аватара",
-		"searchPlaceholder": "Пошук...",
+		"searchPlaceholder": "Пошук…",
 		"noResults": "Нічого не знайдено"
 	},
 	"tournamentCard": {
+		"registrationOpens": "Реєстрація з {date}",
 		"registrationUntil": "Реєстрація до {date}",
 		"startsOn": "Початок {date}",
 		"ongoing": "Турнір триває",
@@ -56,6 +66,7 @@
 		"player2Label": "Гравець 2"
 	},
 	"pageCosts": {
+		"weaponsTab": "W-Engines",
 		"importSuccess": "Імпорт виконано.",
 		"agentsTab": "Персонажі",
 		"exportCsv": "Експорт CSV",
@@ -63,8 +74,9 @@
 		"importCsv": "Імпорт CSV"
 	},
 	"pageTeams": {
+		"noResults": "Команд за запитом не знайдено.",
 		"title": "Команди",
-		"searchPlaceholder": "Пошук...",
+		"searchPlaceholder": "Пошук…",
 		"noTeams": "Команд поки немає"
 	},
 	"pageTeamsMine": {
@@ -75,8 +87,8 @@
 	},
 	"pageDiscordCallback": {
 		"errorLabel": "Помилка: {error}",
-		"redirecting": "Повернення на головну сторінку...",
-		"connecting": "Підключення Discord..."
+		"redirecting": "Повернення на головну сторінку…",
+		"connecting": "Підключення Discord…"
 	},
 	"pageTournamentsCreate": {
 		"title": "Створити турнір",
@@ -93,7 +105,7 @@
 		"roleModerator": "Модератор",
 		"empty": "Модераторів і адмінів поки немає.",
 		"promoteLabel": "Призначити модератором",
-		"searchPlayerPlaceholder": "Пошук гравця...",
+		"searchPlayerPlaceholder": "Пошук гравця…",
 		"promoteButton": "Призначити",
 		"demoteButton": "Зняти",
 		"promoteConfirm": "Призначити {name} модератором?",
@@ -119,7 +131,7 @@
 		"namePlaceholder": "Назва команди",
 		"partnerLabel": "Напарник",
 		"searchPartnerLabel": "Пошук напарника",
-		"searchPlaceholder": "Пошук...",
+		"searchPlaceholder": "Пошук…",
 		"selectPlayerOption": "Оберіть гравця",
 		"fileTooLarge": "Файл завеликий, максимум {maxSize}МБ"
 	},
@@ -177,7 +189,7 @@
 		"tournamentStarted": "Турнір уже розпочався, реєстрація закрита.",
 		"registrationClosed": "Реєстрація на турнір закрита.",
 		"prefillButton": "Заповнити з попередньої реєстрації",
-		"awarenessRequired": "Ти не УСВІДОМИВ.",
+		"awarenessRequired": "Ви не підтвердили ознайомлення з правилами.",
 		"fillAllFields": "Заповніть усі поля",
 		"fileTooLarge": "Файл завеликий, максимум {maxSize}МБ",
 		"awarenessPrefix": "Так, я повністю прочитав регламент і усвідомлюю, що турнір триває з",
@@ -191,7 +203,7 @@
 		"myTeams": "Мої команди",
 		"myHistory": "Моя історія",
 		"logout": "Вийти",
-		"leagueCodeTitle": "🏆 Кодекс Ліги",
+		"leagueCodeTitle": "Кодекс Ліги",
 		"rules": {
 			"ranks": "<b>Ранги:</b> <span class=\"tier-badge t-newbie\">NEWBIE</span> <b>1000+</b>, <span class=\"tier-badge t-mid\">MID</span> <b>1200+</b>, <span class=\"tier-badge t-high\">HIGH</span> <b>1400+</b>.",
 			"qualification": "<b>Кваліфікація:</b> Щоб потрапити в <span class=\"tier-badge t-mid\">MID TIER</span> потрібно <b>1200</b> ELO. Для <span class=\"tier-badge t-high\">HIGH TIER</span> достатньо досягти позначки <b>1400</b> ELO.",
@@ -232,7 +244,7 @@
 		"discussionWithCount": "Обговорення ({count})",
 		"discussionStart": "Обговорити",
 		"noCommentsYet": "Поки що немає коментарів.",
-		"commentPlaceholder": "Написати коментар...",
+		"commentPlaceholder": "Написати коментар…",
 		"send": "Надіслати",
 		"reviewCommentPlaceholder": "Коментар до відгуку",
 		"submitting": "Надсилання…",
@@ -310,13 +322,13 @@
 	"tournamentFormFields": {
 		"sectionBasic": "Основне",
 		"nameLabel": "Назва",
-		"registrationTypeLabel": "Тип реєстрації",
+		"registrationTypeLabel": "Формат",
 		"gameModeLabel": "Режим гри",
 		"descriptionLabel": "Опис",
 		"descriptionPlaceholder": "Підтримується Markdown…",
 		"previewLabel": "Перегляд",
 		"sectionFormat": "Формат",
-		"tournamentTypeLabel": "Тип турніру",
+		"tournamentTypeLabel": "Система",
 		"breakTiesLabel": "Визначати місце нічиїх матчами за місце",
 		"placeLabel": "Місце",
 		"fixedEloLabel": "Фіксоване ELO за перемогу/поразку",
@@ -341,18 +353,20 @@
 	"tournamentAddTeamPopup": {
 		"title": "Додати команду",
 		"searchLabel": "Пошук команди",
-		"searchPlaceholder": "Пошук команди...",
+		"searchPlaceholder": "Пошук команди…",
 		"teamLabel": "Команда",
 		"selectTeamOption": "Виберіть команду"
 	},
 	"tournamentAddPlayerPopup": {
 		"title": "Додати гравця",
 		"searchLabel": "Пошук гравця",
-		"searchPlaceholder": "Пошук гравця...",
+		"searchPlaceholder": "Пошук гравця…",
 		"playerLabel": "Гравець",
 		"selectPlayerOption": "Виберіть гравця"
 	},
 	"adminPanel": {
+		"player1Label": "Гравець 1",
+		"player2Label": "Гравець 2",
 		"title": "Панель керування",
 		"createTournament": "Створити турнір",
 		"adminPageButton": "Адмінка",
@@ -362,8 +376,8 @@
 		"addPlayerTooltip": "Додати гравця",
 		"addPlayerButton": "Гравця",
 		"matchRecordingLabel": "Запис матчу",
-		"searchPlayer1Placeholder": "Пошук Гравця 1...",
-		"searchPlayer2Placeholder": "Пошук Гравця 2...",
+		"searchPlayer1Placeholder": "Пошук Гравця 1…",
+		"searchPlayer2Placeholder": "Пошук Гравця 2…",
 		"eloForecastButton": "Прогноз ELO",
 		"player1WinOption": "Перемога Гравця 1",
 		"player2WinOption": "Перемога Гравця 2",
@@ -379,7 +393,7 @@
 		"resetSeasonPrompt": "Назва сезону для архіву:",
 		"backfillConfirm": "Перерахувати дату останнього матчу для всіх гравців?",
 		"backfillDone": "Оновлено гравців: {count}",
-		"finalizeConfirm": "Застосувати очки?"
+		"finalizeConfirm": "Нарахувати гравцям усі зміни ELO, що очікують після турнірів? Цю дію не можна скасувати."
 	},
 	"tournamentMemberRegistrationFields": {
 		"noImageInClipboard": "У буфері обміну немає зображення",
@@ -398,7 +412,7 @@
 		"hoyolabScreenshotLabel": "Скріншот персонажів у Hoyolab"
 	},
 	"pageTournamentRegisterTeam": {
-		"notAware": "Ви не підтвердили ознайомлення.",
+		"notAware": "Ви не підтвердили ознайомлення з правилами.",
 		"fillAllFields": "Заповніть усі поля для обох гравців",
 		"fileTooLarge": "Файл занадто великий, максимум {max}МБ",
 		"pageTitle": "Реєстрація команди: {name}",
@@ -439,6 +453,8 @@
 		"matchHistory": "Історія матчів"
 	},
 	"historyList": {
+		"previous": "Назад",
+		"openMatchLabel": "Відкрити матч",
 		"confirmDelete": "Видалити запис? ELO/очки та перемоги/поразки буде скасовано.",
 		"legacyDivider": "Легасі історія (можливі помилки)",
 		"eloAdjustment": "Коригування ELO",
@@ -449,6 +465,7 @@
 		"next": "Вперед"
 	},
 	"loginPopup": {
+		"emailLabel": "Ел. пошта",
 		"resetPasswordTitle": "Скидання пароля",
 		"checkEmailMessage": "Перевірте пошту (зокрема спам)",
 		"sendCode": "Надіслати код",
@@ -483,7 +500,7 @@
 		"leaderboardTitle": "Турнірна таблиця ZZZ",
 		"currentLeague": "Поточна ліга",
 		"showInactivePlayers": "Показати неактивних гравців",
-		"searchPlaceholder": "Пошук...",
+		"searchPlaceholder": "Пошук…",
 		"seasonArchive": "Архів сезонів:"
 	},
 	"contributionMenu": {
@@ -494,6 +511,10 @@
 		"proposeChange": "Запропонувати зміну"
 	},
 	"pageTournamentDetail": {
+		"openMatchLabel": "Відкрити матч: {p1} проти {p2}",
+		"adminToolsHeading": "Інструменти адміністратора",
+		"deleteTournamentHint": "Видаляє турнір разом із матчами та реєстраціями. Цю дію не можна скасувати.",
+		"notFound": "Турнір не знайдено.",
 		"statusRegistrationOpen": "Реєстрація відкрита",
 		"statusRegistrationClosed": "Реєстрація закрита",
 		"statusBracketCreated": "Сітку створено, очікує початку",
@@ -508,7 +529,7 @@
 		"confirmDeleteTournament": "Видалити турнір «{name}»? Цю дію неможливо скасувати.",
 		"noViewPermission": "Недостатньо прав для перегляду цієї сторінки.",
 		"divisionLabel": "Сітка {index}",
-		"specTournamentType": "Тип турніру",
+		"specTournamentType": "Формат",
 		"specGameMode": "Ігровий режим",
 		"specSystem": "Система",
 		"specCostRange": "Межі косту",
@@ -539,11 +560,13 @@
 		"gamesHeading": "Ігри",
 		"showCompletedMatchesLabel": "Показати завершені матчі",
 		"showOnlyMyMatchesLabel": "Показати лише мої матчі",
-		"searchPlaceholder": "Пошук...",
+		"searchPlaceholder": "Пошук…",
 		"noMatchesFound": "Матчі не знайдено",
 		"participantsHeading": "Учасники"
 	},
 	"pageTournamentSplit": {
+		"moveToLabel": "Перемістити {name} до",
+		"unassignedOption": "Не розподілено",
 		"errorNotEnoughApproved": "Недостатньо підтверджених гравців для поділу (потрібно мінімум 4, зараз {count})",
 		"errorMinDivisions": "Має бути мінімум 2 сітки",
 		"errorTooManyDivisions": "Забагато сіток: максимум {max} при {count} гравцях",
@@ -564,7 +587,7 @@
 		"unassignedHeading": "Не розподілені ({count})",
 		"divisionHeading": "Сітка {index}",
 		"playersLabel": "Гравців",
-		"dragHint": "Перетягуйте гравців між колонками для розподілу.",
+		"dragHint": "Перетягуйте гравців між колонками або виберіть сітку в меню біля гравця.",
 		"splitButton": "Розділити"
 	},
 	"pageTournamentEdit": {
