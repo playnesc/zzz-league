@@ -28,6 +28,8 @@
 
 	interface Props {
 		players?: LeaderboardPlayer[];
+		// Shows a loading row instead of an empty body while the caller is still fetching.
+		loading?: boolean;
 		hideOptions?: boolean;
 		searchQuery?: string;
 		showInactivePlayers?: boolean;
@@ -39,6 +41,7 @@
 
 	let {
 		players = [],
+		loading = false,
 		hideOptions = false,
 		searchQuery = "",
 		showInactivePlayers = false,
@@ -124,6 +127,11 @@
 		</tr>
 	</thead>
 	<tbody>
+		{#if loading}
+			<tr>
+				<td class="loading-cell" colspan="6">{$_("common.loading")}</td>
+			</tr>
+		{/if}
 		{#each filteredPlayers as player}
 			{@const elo = player.elo || 1000}
 			{@const tier = getTier(player)}
@@ -193,6 +201,11 @@
 </table>
 
 <style>
+	.loading-cell {
+		color: var(--text-dim);
+		font-weight: 400;
+	}
+
 	.player-cell {
 		display: flex;
 		align-items: center;

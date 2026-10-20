@@ -191,15 +191,13 @@
 			>
 				<Leaderboard
 					players={displayPlayers}
+					loading={!isViewingArchive && !livePlayersLoaded}
 					{searchQuery}
 					{showInactivePlayers}
 					hideOptions={isViewingArchive}
 					onPlayerUpdated={handlePlayerUpdated}
 					onPlayerDeleted={handlePlayerDeleted}
 				/>
-				{#if !isViewingArchive && !livePlayersLoaded}
-					<p class="notice">{$_("common.loading")}</p>
-				{/if}
 			</div>
 		</div>
 
