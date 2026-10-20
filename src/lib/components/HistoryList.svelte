@@ -262,10 +262,11 @@
 				{/if}
 			</div>
 			<div class="h-score-wrap">
-				{#if entry.resultP1 && entry.resultP2}
-					<span class="h-score">{leftResult}–{rightResult}</span>
-				{:else if entry.kind === "tech_loss" || right}
+				<!-- tech loss wins over any result typed before it; legacy entries without a result show nothing -->
+				{#if entry.kind === "tech_loss"}
 					<span class="h-score techloss">{$_("historyList.techLoss")}</span>
+				{:else if entry.resultP1 && entry.resultP2}
+					<span class="h-score">{leftResult}–{rightResult}</span>
 				{/if}
 			</div>
 			<div class="h-meta">
