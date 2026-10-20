@@ -24,7 +24,7 @@
 	},
 	"header": {
 		"home": "Главная",
-		"tournamentArchive": "Архив турниров",
+		"tournaments": "Турниры",
 		"teams": "Команды",
 		"matchHistory": "История матчей",
 		"communityCost": "Коммунити кост",
@@ -115,8 +115,11 @@
 		"selectPlayer": "Выберите игрока"
 	},
 	"pageTournaments": {
-		"title": "Архив турниров",
-		"noTournaments": "Турниров пока нет"
+		"title": "Турниры",
+		"noTournaments": "Турниров пока нет",
+		"previous": "Назад",
+		"next": "Вперед",
+		"pageLabel": "Страница {page} из {total}"
 	},
 	"pageHistory": {
 		"title": "Вся история"

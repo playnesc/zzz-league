@@ -174,6 +174,13 @@ export interface HistoryEntryDto {
 	timestamp: string;
 }
 
+export interface TournamentPageDto {
+	items: TournamentDto[];
+	page: number;
+	pageSize: number;
+	totalCount: number;
+}
+
 export interface HistoryPageDto {
 	entries: HistoryEntryDto[];
 	hasMore: boolean;

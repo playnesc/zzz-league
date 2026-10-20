@@ -50,7 +50,7 @@
 		<a class="site-logo" href={resolve("/")}>NESC</a>
 		<nav class="nav-links">
 			<a class="nav-link" class:active={isActive(resolve("/"), true)} href={resolve("/")}>{$_("header.home")}</a>
-			<a class="nav-link" class:active={isActive(resolve("/tournaments"))} href={resolve("/tournaments")}>{$_("header.tournamentArchive")}</a>
+			<a class="nav-link" class:active={isActive(resolve("/tournaments"))} href={resolve("/tournaments")}>{$_("header.tournaments")}</a>
 			<a class="nav-link" class:active={isActive(resolve("/teams"))} href={resolve("/teams")}>{$_("header.teams")}</a>
 			<a class="nav-link" class:active={isActive(resolve("/history"))} href={resolve("/history")}>{$_("header.matchHistory")}</a>
 		</nav>

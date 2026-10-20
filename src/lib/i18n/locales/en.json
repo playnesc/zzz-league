@@ -24,7 +24,7 @@
 	},
 	"header": {
 		"home": "Home",
-		"tournamentArchive": "Tournament archive",
+		"tournaments": "Tournaments",
 		"teams": "Teams",
 		"matchHistory": "Match history",
 		"communityCost": "Community cost",
@@ -115,8 +115,11 @@
 		"selectPlayer": "Select a player"
 	},
 	"pageTournaments": {
-		"title": "Tournament archive",
-		"noTournaments": "No tournaments yet"
+		"title": "Tournaments",
+		"noTournaments": "No tournaments yet",
+		"previous": "Previous",
+		"next": "Next",
+		"pageLabel": "Page {page} of {total}"
 	},
 	"pageHistory": {
 		"title": "Full history"

@@ -1,6 +1,6 @@
 import { apiDelete, apiGet, apiPost, apiPut } from '../api';
 import type { Tournament, TournamentGameMode, TournamentRegistrationKind } from '../types';
-import { epoch, type TournamentDto } from './dtos';
+import { epoch, type TournamentDto, type TournamentPageDto } from './dtos';
 
 function toTournament(dto: TournamentDto): Tournament {
 	return {
@@ -15,6 +15,21 @@ function toTournament(dto: TournamentDto): Tournament {
 
 export async function listTournaments(): Promise<Tournament[]> {
 	return (await apiGet<TournamentDto[]>('/api/tournaments')).map((dto) => toTournament(dto));
+}
+
+export interface TournamentPage {
+	items: Tournament[];
+	page: number;
+	pageSize: number;
+	totalCount: number;
+}
+
+// Newest first, 1-based `page`. pageSize is optional — the server defaults it (21) and caps it (100).
+export async function listTournamentsPage(page: number, pageSize?: number): Promise<TournamentPage> {
+	const params = new URLSearchParams({ page: String(page) });
+	if (pageSize !== undefined) params.set('pageSize', String(pageSize));
+	const dto = await apiGet<TournamentPageDto>(`/api/tournaments/paged?${params}`);
+	return { ...dto, items: dto.items.map((item) => toTournament(item)) };
 }
 
 export async function getTournament(id: string): Promise<Tournament | null> {

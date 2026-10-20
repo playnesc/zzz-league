@@ -24,7 +24,7 @@
 	},
 	"header": {
 		"home": "Головна",
-		"tournamentArchive": "Архів турнірів",
+		"tournaments": "Турніри",
 		"teams": "Команди",
 		"matchHistory": "Історія матчів",
 		"communityCost": "Community cost",
@@ -115,8 +115,11 @@
 		"selectPlayer": "Оберіть гравця"
 	},
 	"pageTournaments": {
-		"title": "Архів турнірів",
-		"noTournaments": "Турнірів поки немає"
+		"title": "Турніри",
+		"noTournaments": "Турнірів поки немає",
+		"previous": "Назад",
+		"next": "Вперед",
+		"pageLabel": "Сторінка {page} з {total}"
 	},
 	"pageHistory": {
 		"title": "Уся історія"

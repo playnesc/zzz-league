@@ -50,7 +50,7 @@
 		});
 
 		// Every client is auto-joined to the hub's list group (see TournamentHub), so this covers
-		// the home page / tournament archive lists without a per-tournament subscription.
+		// the home page / tournaments lists without a per-tournament subscription.
 		const unsubTournamentChanged = onTournamentChanged((tournamentId) => {
 			league.refreshOneTournament(tournamentId);
 		});
