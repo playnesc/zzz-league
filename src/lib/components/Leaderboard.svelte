@@ -7,6 +7,7 @@
 	import type { Player, PlayerListItem } from "$lib/types";
 	import { getLvl, getTier, openProfilePopup } from "$lib/uiCommon";
 	import PointsDelta from "$lib/components/PointsDelta.svelte";
+	import { confirmDialog, notify, promptDialog } from "$lib/dialogs";
 
 	const INACTIVITY_THRESHOLD_MS = 90 * 24 * 60 * 60 * 1000;
 
@@ -71,24 +72,32 @@
 	);
 
 	async function handleUpdatePlayerElo(uid: string, currentElo: number) {
-		const val = prompt($_("leaderboard.newEloPrompt"), String(currentElo));
+		const val = await promptDialog($_("leaderboard.newEloPrompt"), {
+			defaultValue: String(currentElo),
+			inputType: "number",
+			confirmLabel: $_("common.save"),
+		});
 		if (!val) return;
 		const elo = parseInt(val);
 		if (isNaN(elo)) return;
 		try {
 			onPlayerUpdated?.(await updatePlayerElo(uid, elo));
-		} catch (e: any) {
-			alert(e.message);
+		} catch (e) {
+			notify(e);
 		}
 	}
 
 	async function handleDelete(uid: string) {
-		if (!confirm($_("leaderboard.confirmDeletePlayer"))) return;
+		const confirmed = await confirmDialog($_("leaderboard.confirmDeletePlayer"), {
+			danger: true,
+			confirmLabel: $_("common.delete"),
+		});
+		if (!confirmed) return;
 		try {
 			await deletePlayer(uid);
 			onPlayerDeleted?.(uid);
-		} catch (e: any) {
-			alert(e.message);
+		} catch (e) {
+			notify(e);
 		}
 	}
 
@@ -115,7 +124,7 @@
 		</tr>
 	</thead>
 	<tbody>
-		{#each filteredPlayers as player, index}
+		{#each filteredPlayers as player}
 			{@const elo = player.elo || 1000}
 			{@const tier = getTier(player)}
 			{@const ladderPos = getLadderPos(player)}
@@ -129,7 +138,8 @@
 					.filter(Boolean)
 					.join(" ")}
 			>
-				<td>{index + 1}</td>
+				<!-- position on the whole ladder, so searching doesn't renumber players -->
+				<td>{ladderPos + 1}</td>
 				<td><span class="tier-badge {tier.cls}">{tier.name}</span></td>
 				<td class="player-name">
 					<div class="player-cell">

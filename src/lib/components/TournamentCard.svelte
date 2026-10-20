@@ -88,7 +88,6 @@
 	.tournament-row {
 		display: flex;
 		align-items: center;
-		gap: 10px;
 		min-width: 0;
 	}
 

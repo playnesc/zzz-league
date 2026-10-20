@@ -189,7 +189,7 @@
 		"tournamentStarted": "Турнір уже розпочався, реєстрація закрита.",
 		"registrationClosed": "Реєстрація на турнір закрита.",
 		"prefillButton": "Заповнити з попередньої реєстрації",
-		"awarenessRequired": "Ви не підтвердили ознайомлення з правилами.",
+		"awarenessRequired": "Ти не УСВІДОМИВ.",
 		"fillAllFields": "Заповніть усі поля",
 		"fileTooLarge": "Файл завеликий, максимум {maxSize}МБ",
 		"awarenessPrefix": "Так, я повністю прочитав регламент і усвідомлюю, що турнір триває з",
@@ -412,7 +412,7 @@
 		"hoyolabScreenshotLabel": "Скріншот персонажів у Hoyolab"
 	},
 	"pageTournamentRegisterTeam": {
-		"notAware": "Ви не підтвердили ознайомлення з правилами.",
+		"notAware": "Ви не підтвердили ознайомлення.",
 		"fillAllFields": "Заповніть усі поля для обох гравців",
 		"fileTooLarge": "Файл занадто великий, максимум {max}МБ",
 		"pageTitle": "Реєстрація команди: {name}",
@@ -512,8 +512,6 @@
 	},
 	"pageTournamentDetail": {
 		"openMatchLabel": "Відкрити матч: {p1} проти {p2}",
-		"adminToolsHeading": "Інструменти адміністратора",
-		"deleteTournamentHint": "Видаляє турнір разом із матчами та реєстраціями. Цю дію не можна скасувати.",
 		"notFound": "Турнір не знайдено.",
 		"statusRegistrationOpen": "Реєстрація відкрита",
 		"statusRegistrationClosed": "Реєстрація закрита",

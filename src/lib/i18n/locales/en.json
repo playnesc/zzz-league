@@ -512,8 +512,6 @@
 	},
 	"pageTournamentDetail": {
 		"openMatchLabel": "Open match: {p1} vs {p2}",
-		"adminToolsHeading": "Admin tools",
-		"deleteTournamentHint": "Removes the tournament with its matches and registrations. This can't be undone.",
 		"notFound": "Tournament not found.",
 		"statusRegistrationOpen": "Registration open",
 		"statusRegistrationClosed": "Registration closed",

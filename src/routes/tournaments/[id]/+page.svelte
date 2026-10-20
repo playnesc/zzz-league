@@ -637,35 +637,120 @@
 				</div>
 			</div>
 
-			{#if hasUserActions}
-				<div class="actions-user">
-					{#if registrationWindowOpen && (tournament.registrationType === "team" || tierEligible)}
-						<a
-							class="btn-common btn-play"
-							href={resolve(
-								tournament.registrationType === "team"
-									? `/tournaments/${tournament.id}/register-team`
-									: `/tournaments/${tournament.id}/register`,
-							)}
-							>{#if myRegistration}{$_(
-									"pageTournamentDetail.updateRegistrationButton",
-								)}{:else}{$_("pageTournamentDetail.registerButton")}{/if}</a
-						>
+			{#if $isAdmin || hasUserActions}
+				<div class="tournament-actions">
+					{#if $isAdmin}
+						<div class="actions-admin">
+							<button
+								class="btn-common btn-danger-ghost"
+								class:btn-loading={deletingTournament}
+								onclick={handleDeleteTournament}
+								>{$_("pageTournamentDetail.deleteTournamentButton")}</button
+							>
+							{#if !isLocked(tournament.state)}
+								<a
+									class="btn-common"
+									href={resolve(`/tournaments/${tournament.id}/edit`)}
+									>{$_("pageTournamentDetail.editTournamentButton")}</a
+								>
+								{#if tournament.registrationType === "team"}
+									<button
+										class="btn-common"
+										onclick={() => (addTeamPopupOpen = true)}
+										>{$_("pageTournamentDetail.addTeamButton")}</button
+									>
+								{:else}
+									<button
+										class="btn-common"
+										onclick={() => (addPlayerPopupOpen = true)}
+										>{$_("pageTournamentDetail.addPlayerButton")}</button
+									>
+								{/if}
+								{#if isRegistrationOpen(tournament.state)}
+									<button
+										class="btn-common"
+										class:btn-loading={closingRegistration}
+										onclick={handleCloseRegistration}
+										>{$_("pageTournamentDetail.closeRegistrationButton")}</button
+									>
+								{/if}
+								{#if !tournament.divisionGroupId}
+									<a
+										class="btn-common"
+										href={resolve(`/tournaments/${tournament.id}/split`)}
+										>{$_("pageTournamentDetail.splitIntoGroupsButton")}</a
+									>
+								{/if}
+								<button
+									class="btn-common btn-play"
+									class:btn-loading={creatingBracket}
+									onclick={handleCreateBracket}
+									>{$_("pageTournamentDetail.createBracketButton")}</button
+								>
+							{/if}
+							{#if isBracketCreated(tournament.state)}
+								<a
+									class="btn-common"
+									href={tournament.challongeTournamentUrl}
+									target="_blank"
+									rel="noopener noreferrer">{$_("pageTournamentDetail.openInChallongeButton")}</a
+								>
+								<button
+									class="btn-common btn-play"
+									class:btn-loading={startingTournament}
+									onclick={handleStartTournament}
+									>{$_("pageTournamentDetail.startTournamentButton")}</button
+								>
+							{/if}
+							{#if tournament.state === TOURNAMENT_STATE.STARTED}
+								<button
+									class="btn-common btn-play"
+									class:btn-loading={updatingGames}
+									onclick={handleUpdateTournamentGames}
+									>{$_("pageTournamentDetail.forceUpdateGamesButton")}</button
+								>
+							{/if}
+							{#if tournament.state === TOURNAMENT_STATE.AWAITING_REVIEW}
+								<button
+									class="btn-common btn-play"
+									class:btn-loading={finishingTournament}
+									onclick={handleFinishTournament}
+									>{$_("pageTournamentDetail.finishTournamentButton")}</button
+								>
+							{/if}
+						</div>
 					{/if}
-					{#if myRegistration}
-						<button
-							class="btn-common"
-							onclick={() => openRegistrationRecord(myRegistration)}
-							>{$_("pageTournamentDetail.myRegistrationButton")}</button
-						>
-					{/if}
-					{#if myRegistration && canCancelRegistration}
-						<button
-							class="btn-common btn-danger-ghost"
-							class:btn-loading={cancellingRegistration}
-							onclick={handleCancelRegistration}
-							>{$_("pageTournamentDetail.cancelRegistrationButton")}</button
-						>
+					{#if hasUserActions}
+						<div class="actions-user">
+							{#if registrationWindowOpen && (tournament.registrationType === "team" || tierEligible)}
+								<a
+									class="btn-common btn-play"
+									href={resolve(
+										tournament.registrationType === "team"
+											? `/tournaments/${tournament.id}/register-team`
+											: `/tournaments/${tournament.id}/register`,
+									)}
+									>{#if myRegistration}{$_(
+											"pageTournamentDetail.updateRegistrationButton",
+										)}{:else}{$_("pageTournamentDetail.registerButton")}{/if}</a
+								>
+							{/if}
+							{#if myRegistration}
+								<button
+									class="btn-common"
+									onclick={() => openRegistrationRecord(myRegistration)}
+									>{$_("pageTournamentDetail.myRegistrationButton")}</button
+								>
+							{/if}
+							{#if myRegistration && canCancelRegistration}
+								<button
+									class="btn-common btn-danger-ghost"
+									class:btn-loading={cancellingRegistration}
+									onclick={handleCancelRegistration}
+									>{$_("pageTournamentDetail.cancelRegistrationButton")}</button
+								>
+							{/if}
+						</div>
 					{/if}
 				</div>
 			{/if}
@@ -893,100 +978,6 @@
 					/>
 				{/if}
 			</div>
-
-			{#if $isAdmin}
-				<details class="admin-section" open>
-					<summary class="collapsible-header">
-						<h2>{$_("pageTournamentDetail.adminToolsHeading")}</h2>
-						<svg class="collapse-arrow" aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
-					</summary>
-					<div class="actions-admin">
-						{#if !isLocked(tournament.state)}
-							<a
-								class="btn-common"
-								href={resolve(`/tournaments/${tournament.id}/edit`)}
-								>{$_("pageTournamentDetail.editTournamentButton")}</a
-							>
-							{#if tournament.registrationType === "team"}
-								<button
-									class="btn-common"
-									onclick={() => (addTeamPopupOpen = true)}
-									>{$_("pageTournamentDetail.addTeamButton")}</button
-								>
-							{:else}
-								<button
-									class="btn-common"
-									onclick={() => (addPlayerPopupOpen = true)}
-									>{$_("pageTournamentDetail.addPlayerButton")}</button
-								>
-							{/if}
-							{#if isRegistrationOpen(tournament.state)}
-								<button
-									class="btn-common"
-									class:btn-loading={closingRegistration}
-									onclick={handleCloseRegistration}
-									>{$_("pageTournamentDetail.closeRegistrationButton")}</button
-								>
-							{/if}
-							{#if !tournament.divisionGroupId}
-								<a
-									class="btn-common"
-									href={resolve(`/tournaments/${tournament.id}/split`)}
-									>{$_("pageTournamentDetail.splitIntoGroupsButton")}</a
-								>
-							{/if}
-							<button
-								class="btn-common btn-play"
-								class:btn-loading={creatingBracket}
-								onclick={handleCreateBracket}
-								>{$_("pageTournamentDetail.createBracketButton")}</button
-							>
-						{/if}
-						{#if isBracketCreated(tournament.state)}
-							<a
-								class="btn-common"
-								href={tournament.challongeTournamentUrl}
-								target="_blank"
-								rel="noopener noreferrer">{$_("pageTournamentDetail.openInChallongeButton")}</a
-							>
-							<button
-								class="btn-common btn-play"
-								class:btn-loading={startingTournament}
-								onclick={handleStartTournament}
-								>{$_("pageTournamentDetail.startTournamentButton")}</button
-							>
-						{/if}
-						{#if tournament.state === TOURNAMENT_STATE.STARTED}
-							<button
-								class="btn-common"
-								class:btn-loading={updatingGames}
-								onclick={handleUpdateTournamentGames}
-								>{$_("pageTournamentDetail.forceUpdateGamesButton")}</button
-							>
-						{/if}
-						{#if tournament.state === TOURNAMENT_STATE.AWAITING_REVIEW}
-							<button
-								class="btn-common btn-play"
-								class:btn-loading={finishingTournament}
-								onclick={handleFinishTournament}
-								>{$_("pageTournamentDetail.finishTournamentButton")}</button
-							>
-						{/if}
-					</div>
-					<div class="danger-zone">
-						<div class="danger-zone-text">
-							<span class="danger-zone-title">{$_("pageTournamentDetail.deleteTournamentButton")}</span>
-							<span class="danger-zone-hint">{$_("pageTournamentDetail.deleteTournamentHint")}</span>
-						</div>
-						<button
-							class="btn-common btn-danger-ghost"
-							class:btn-loading={deletingTournament}
-							onclick={handleDeleteTournament}
-							>{$_("pageTournamentDetail.deleteTournamentButton")}</button
-						>
-					</div>
-				</details>
-			{/if}
 		{:else if loadState === "missing"}
 			<p class="notice">{$_("pageTournamentDetail.notFound")}</p>
 		{:else}
@@ -1084,6 +1075,7 @@
 		background: none;
 		border: none;
 		font: inherit;
+		font-weight: bold;
 		text-align: inherit;
 		cursor: pointer;
 		min-width: 0;
@@ -1223,15 +1215,9 @@
 		text-align: left;
 		cursor: pointer;
 		user-select: none;
-		list-style: none;
 	}
 
-	.collapsible-header::-webkit-details-marker {
-		display: none;
-	}
-
-	.collapsible-heading,
-	.collapsible-header h2 {
+	.collapsible-heading {
 		border: none;
 		padding: 0;
 		margin: 0;
@@ -1245,10 +1231,6 @@
 		flex-shrink: 0;
 		color: var(--text-muted);
 		transition: transform 0.15s ease;
-	}
-
-	.admin-section:not([open]) .collapse-arrow {
-		transform: rotate(-90deg);
 	}
 
 	.collapse-arrow.collapsed {
@@ -1338,55 +1320,31 @@
 		color: var(--text-muted);
 	}
 
-	.actions-user {
+	.tournament-actions {
 		display: flex;
+		align-items: stretch;
+		gap: 28px;
 		flex-wrap: wrap;
-		gap: 8px;
-	}
-
-	.admin-section {
-		display: flex;
-		flex-direction: column;
-		gap: 14px;
-		margin-top: 8px;
-	}
-
-	.admin-section[open] > summary {
-		margin-bottom: 14px;
+		padding-bottom: 20px;
+		border-bottom: 1px solid var(--border-soft);
 	}
 
 	.actions-admin {
-		display: flex;
-		flex-wrap: wrap;
+		display: grid;
+		grid-template-columns: repeat(2, minmax(150px, 1fr));
 		gap: 8px;
 	}
 
-	.danger-zone {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		gap: 12px 16px;
-		flex-wrap: wrap;
-		margin-top: 14px;
-		padding: 14px 16px;
-		border: 1px solid var(--danger-border);
-		border-radius: var(--r-md);
-	}
-
-	.danger-zone-text {
+	.actions-user {
 		display: flex;
 		flex-direction: column;
-		gap: 2px;
-		min-width: 0;
+		gap: 8px;
+		margin-left: auto;
 	}
 
-	.danger-zone-title {
-		font-weight: 700;
-	}
-
-	.danger-zone-hint {
-		font-size: var(--fs-sm);
-		color: var(--text-muted);
+	.actions-admin + .actions-user {
+		padding-left: 28px;
+		border-left: 1px solid var(--border-soft);
 	}
 
 	.description-text :global(a) {

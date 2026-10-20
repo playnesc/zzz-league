@@ -429,8 +429,9 @@ td {
 }
 
 .tone-neutral {
-	background: var(--surface-2);
+	background: var(--bg-elevated);
 	color: var(--text-muted);
+	box-shadow: inset 0 0 0 1px var(--border);
 }
 
 .tier-badge {
