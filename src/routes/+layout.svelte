@@ -1,6 +1,6 @@
 <script lang="ts">
 	import "../app.css";
-	import "$lib/i18n";
+	import { locale, migrateLegacyLocale } from "$lib/i18n";
 
 	import {
 		profileUser,
@@ -18,6 +18,7 @@
 	import PlayerProfilePopup from "$lib/components/PlayerProfilePopup.svelte";
 	import SettingsPopup from "$lib/components/SettingsPopup.svelte";
 	import { onMount } from "svelte";
+	import { page } from "$app/state";
 	import { onAuthStateChanged } from "firebase/auth";
 	import { auth } from "$lib/firebase";
 	import { connectIfAuthenticated, disconnect, onTournamentChanged } from "$lib/signalr";
@@ -26,7 +27,13 @@
 	import DialogHost from "$lib/components/DialogHost.svelte";
 	import favicon from "$lib/assets/favicon.png";
 
-	let { children } = $props();
+	let { children, data } = $props();
+
+	// Set synchronously before any child renders: on the server this makes the (shared, global)
+	// svelte-i18n store match this request's locale for the whole render, and in the browser it
+	// makes hydration render the same strings the server sent. Later switches go through setLocale.
+	// svelte-ignore state_referenced_locally
+	locale.set(data.locale);
 
 	let profileOpen = $state(false);
 	let imageViewerOpen = $state(false);
@@ -37,6 +44,8 @@
 	});
 
 	onMount(() => {
+		migrateLegacyLocale();
+
 		// The tournament list depends on the caller (hidden tournaments are only served to
 		// moderators/admins), so it's (re)fetched on every auth state change — including the
 		// initial one Firebase fires on load.
@@ -68,6 +77,12 @@
 
 <svelte:head>
 	<link rel="icon" href={favicon} />
+	<!-- Owned here rather than per page: Svelte's SSR drops a page's <title> when that page
+	     re-renders for bind: props. Pages name themselves via a `title` in their load data. -->
+	<title>{page.data.title ? `${page.data.title} — NESC` : "NESC"}</title>
+	<meta property="og:site_name" content="NESC" />
+	<meta property="og:type" content="website" />
+	<meta property="og:image" content={new URL(favicon, page.url.origin).href} />
 </svelte:head>
 
 <SiteHeader />

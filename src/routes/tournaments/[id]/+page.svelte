@@ -63,6 +63,8 @@
 	import { capDefaultHeight } from "$lib/actions/capDefaultHeight";
 	import { onMount } from "svelte";
 
+	let { data } = $props();
+
 	const id = $derived(page.params.id);
 
 	let now = $state(Date.now());
@@ -534,6 +536,17 @@
 		};
 	});
 </script>
+
+<svelte:head>
+	{#if data.preview}
+		<meta property="og:title" content={data.preview.name} />
+		<meta property="og:url" content={page.url.href} />
+		{#if data.preview.description}
+			<meta name="description" content={data.preview.description} />
+			<meta property="og:description" content={data.preview.description} />
+		{/if}
+	{/if}
+</svelte:head>
 
 <div class="layout">
 	<SidePanel></SidePanel>

@@ -1,3 +1,4 @@
+import { browser } from "$app/environment";
 import DOMPurify from "dompurify";
 import { marked } from "marked";
 import { loginOpen, profileUser, settingsOpen, viewingImage } from "./store";
@@ -104,7 +105,10 @@ export function getLvl(elo: number): number {
 	return Math.min(10, Math.floor(((elo || 1000) - 1000) / 40) + 1);
 }
 
+// DOMPurify needs a DOM, so this renders nothing during SSR. Every caller's markdown comes from
+// client-fetched data or user input anyway, so the real render happens in the browser.
 export function renderMarkdown(text: string): string {
+	if (!browser) return "";
 	const withUnderline = (text ?? "").replace(/__(.+?)__/g, "<u>$1</u>");
 	const html = marked.parse(withUnderline, { async: false }) as string;
 	return DOMPurify.sanitize(html);
