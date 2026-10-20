@@ -6,7 +6,7 @@
 	import SidePanel from "$lib/components/SidePanel.svelte";
 	import TournamentFormFields from "$lib/components/TournamentFormFields.svelte";
 	import { _ } from "$lib/i18n";
-	import { isAdmin } from "$lib/store";
+	import { authReady, isAdmin } from "$lib/store";
 	import { isLocked } from "$lib/tournamentState";
 	import type { TournamentGameMode, TournamentRegistrationKind } from "$lib/types";
 	import { parseAndValidateTournamentForm, toDateTimeLocal } from "$lib/tournamentForm";
@@ -155,7 +155,9 @@
 	<SidePanel></SidePanel>
 
 	<div class="card main-content">
-		{#if $isAdmin}
+		{#if !$authReady}
+			<p class="notice">{$_("common.loading")}</p>
+		{:else if $isAdmin}
 			<h2 class="page-title">{$_("pageTournamentEdit.pageTitle")}</h2>
 
 			{#if !loaded}

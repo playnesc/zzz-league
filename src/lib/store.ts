@@ -4,11 +4,18 @@ import { hasRole } from './roles';
 import { getPlayer, getSeasonTimer, getTournament, listTournaments } from './backend';
 
 export const currentUser = writable<Player | null>(null);
+// False until Firebase Auth has restored (or ruled out) a session and currentUser/role are
+// settled. Until then `currentUser === null` means "don't know yet", not "logged out" — which
+// matters under SSR, where the server always renders that unknown state. Gate logged-out and
+// no-permission UI on this so signed-in users don't see it flash.
+export const authReady = writable(false);
 export const role = writable<PlayerRole>("player");
 export const isAdmin = derived(role, ($role) => hasRole($role, "admin"));
 export const isModerator = derived(role, ($role) => hasRole($role, "moderator"));
 
 export const tournaments = writable<Tournament[]>([]);
+// Distinguishes "not fetched yet" from "genuinely empty" for empty-state messages.
+export const tournamentsLoaded = writable(false);
 
 export const seasonTimerEndsAt = writable<number | null>(null);
 
@@ -25,6 +32,7 @@ export const viewingImage = writable<string>("");
 
 export async function refreshTournaments(): Promise<void> {
 	tournaments.set(await listTournaments());
+	tournamentsLoaded.set(true);
 }
 
 // Called from the root layout on SignalR's list-group "TournamentChanged" push — upserts just the

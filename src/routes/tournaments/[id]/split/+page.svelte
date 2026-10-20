@@ -6,7 +6,7 @@
 	import SidePanel from "$lib/components/SidePanel.svelte";
 	import { getTournament, listPlayers, listRegistrations, splitTournament } from "$lib/backend";
 	import { _ } from "$lib/i18n";
-	import { isAdmin } from "$lib/store";
+	import { authReady, isAdmin } from "$lib/store";
 	import type { Tournament } from "$lib/types";
 	import { isLocked } from "$lib/tournamentState";
 	import { onMount, untrack } from "svelte";
@@ -262,7 +262,9 @@
 	<SidePanel></SidePanel>
 
 	<div class="card main-content">
-		{#if !$isAdmin}
+		{#if !$authReady}
+			<p class="notice">{$_("common.loading")}</p>
+		{:else if !$isAdmin}
 			<p class="notice">{$_("pageTournamentSplit.noViewPermission")}</p>
 		{:else if !loaded}
 			<h2>{$_("pageTournamentSplit.pageTitle")}</h2>

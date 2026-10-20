@@ -9,6 +9,7 @@
 	import {
 		contributionColor,
 		contributions,
+		contributionsLoaded,
 		type ContributionListItem,
 	} from "$lib/contributions";
 	import ContributionMenu from "./ContributionMenu.svelte";
@@ -184,7 +185,9 @@
 <div class="log-columns">
 	<div class="card log-card">
 		<h2 class="log-heading rejected">{$_("communityCostsTable.rejectedHeading")}</h2>
-		{#if rejectedLog.length === 0}
+		{#if !$contributionsLoaded}
+			<p class="notice">{$_("common.loading")}</p>
+		{:else if rejectedLog.length === 0}
 			<p class="notice">{$_("communityCostsTable.noRejected")}</p>
 		{:else}
 			<div class="log-list">
@@ -204,7 +207,9 @@
 
 	<div class="card log-card">
 		<h2 class="log-heading approved">{$_("communityCostsTable.approvedHeading")}</h2>
-		{#if approvedLog.length === 0}
+		{#if !$contributionsLoaded}
+			<p class="notice">{$_("common.loading")}</p>
+		{:else if approvedLog.length === 0}
 			<p class="notice">{$_("communityCostsTable.noApproved")}</p>
 		{:else}
 			<div class="log-list">

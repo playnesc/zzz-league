@@ -8,6 +8,7 @@
 		loginOpen,
 		currentUser,
 		role,
+		authReady,
 		viewingImage,
 		refreshCurrentUser,
 		refreshTournaments,
@@ -51,12 +52,17 @@
 		// initial one Firebase fires on load.
 		const unsubAuth = onAuthStateChanged(auth, async (user) => {
 			if (user) {
-				await refreshCurrentUser(user.uid);
+				try {
+					await refreshCurrentUser(user.uid);
+				} finally {
+					$authReady = true;
+				}
 				refreshTournaments();
 				await connectIfAuthenticated();
 			} else {
 				$currentUser = null;
 				$role = "player";
+				$authReady = true;
 				refreshTournaments();
 				await disconnect();
 			}

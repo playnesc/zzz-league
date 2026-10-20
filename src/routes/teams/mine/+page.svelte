@@ -5,7 +5,7 @@
 	import TeamDetailsPopup from "$lib/components/TeamDetailsPopup.svelte";
 	import TeamFormPopup from "$lib/components/TeamFormPopup.svelte";
 	import TeamRow from "$lib/components/TeamRow.svelte";
-	import { currentUser, isAdmin } from "$lib/store";
+	import { authReady, currentUser, isAdmin } from "$lib/store";
 	import type { Team } from "$lib/types";
 
 	let teams = $state<Team[]>([]);
@@ -72,7 +72,9 @@
 			>
 		</div>
 
-		{#if !$currentUser}
+		{#if !$authReady}
+			<p class="notice">{$_("common.loading")}</p>
+		{:else if !$currentUser}
 			<p class="notice">{$_("pageTeamsMine.loginPrompt")}</p>
 		{:else if loading}
 			<p class="notice">{$_("common.loading")}</p>

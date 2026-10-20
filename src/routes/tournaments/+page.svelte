@@ -3,7 +3,7 @@
 	import SidePanel from "$lib/components/SidePanel.svelte";
 	import TournamentCard from "$lib/components/TournamentCard.svelte";
 	import { _ } from "$lib/i18n";
-	import { isModerator, tournaments } from "$lib/store";
+	import { isModerator, tournaments, tournamentsLoaded } from "$lib/store";
 
 	let now = $state(Date.now());
 
@@ -35,6 +35,8 @@
 					<TournamentCard {tournament} {now} compact />
 				{/each}
 			</div>
+		{:else if !$tournamentsLoaded}
+			<p class="empty-label">{$_("common.loading")}</p>
 		{:else}
 			<p class="empty-label">{$_("pageTournaments.noTournaments")}</p>
 		{/if}

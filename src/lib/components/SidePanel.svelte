@@ -10,7 +10,7 @@
 	import { auth } from "$lib/firebase";
 	import { signOut } from "firebase/auth";
 	import AdminPanel from "./AdminPanel.svelte";
-	import { currentUser, isAdmin } from "$lib/store";
+	import { authReady, currentUser, isAdmin } from "$lib/store";
 	import { resolve } from "$app/paths";
 	import { _ } from "$lib/i18n";
 	import { onMount } from "svelte";
@@ -18,15 +18,20 @@
 	let avatar = $derived(getAgentAvatar($currentUser?.avatar));
 
 	// The rules are reference material: open beside the content on desktop, collapsed on phones
-	// where the side panel stacks above the leaderboard.
-	let rulesOpen = $state(true);
+	// where the side panel stacks above the leaderboard. The server can't see the viewport, so it
+	// renders them collapsed and desktop opens them after hydration — that only grows the side
+	// column, whereas the reverse would collapse a long list above the content on phones.
+	let rulesOpen = $state(false);
 	onMount(() => {
-		if (window.matchMedia("(max-width: 800px)").matches) rulesOpen = false;
+		if (!window.matchMedia("(max-width: 800px)").matches) rulesOpen = true;
 	});
 </script>
 
 <div class="side-panel">
-	{#if !$currentUser}
+	{#if !$authReady}
+		<!-- Holds the login card's space until we know which card to show (see authReady). -->
+		<div class="card auth-pending" aria-hidden="true"></div>
+	{:else if !$currentUser}
 		<div class="card">
 			<div class="btn-row">
 				<button class="btn-common btn-play" onclick={openLoginPopup}
@@ -107,6 +112,11 @@
 		display: flex;
 		flex-direction: column;
 		gap: 18px;
+	}
+
+	/* Same height as the logged-out card (one button row), the more common first paint. */
+	.auth-pending {
+		min-height: 74px;
 	}
 
 	.user-label {

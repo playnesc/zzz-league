@@ -17,9 +17,12 @@ export type { ContributionDetail, ContributionListItem, ContributionReview, Revi
 export { getContribution };
 
 export const contributions = writable<ContributionListItem[]>([]);
+// Distinguishes "not fetched yet" from "genuinely empty" for the review logs' empty states.
+export const contributionsLoaded = writable(false);
 
 export async function refreshContributions(): Promise<void> {
 	contributions.set(await listContributions());
+	contributionsLoaded.set(true);
 }
 
 // Detail responses carry everything a list item needs plus the full review list — drop the

@@ -23,6 +23,7 @@
 
 	let archives = $state<Archive[]>([]);
 	let livePlayers = $state<PlayerListItem[]>([]);
+	let livePlayersLoaded = $state(false);
 
 	let searchQuery = $state("");
 	let showInactivePlayers = $state(false);
@@ -65,7 +66,10 @@
 
 	onMount(() => {
 		listArchives().then((loaded) => (archives = loaded));
-		listPlayers().then((loaded) => (livePlayers = loaded));
+		listPlayers().then((loaded) => {
+			livePlayers = loaded;
+			livePlayersLoaded = true;
+		});
 		refreshSeasonTimer();
 
 		const interval = setInterval(() => {
@@ -193,6 +197,9 @@
 					onPlayerUpdated={handlePlayerUpdated}
 					onPlayerDeleted={handlePlayerDeleted}
 				/>
+				{#if !isViewingArchive && !livePlayersLoaded}
+					<p class="notice">{$_("common.loading")}</p>
+				{/if}
 			</div>
 		</div>
 

@@ -5,7 +5,7 @@
 	import SidePanel from "$lib/components/SidePanel.svelte";
 	import TournamentMemberRegistrationFields from "$lib/components/TournamentMemberRegistrationFields.svelte";
 	import { applyForTeamTournament, getTournament, listMyTeams, listRegistrations } from "$lib/backend";
-	import { currentUser, isModerator } from "$lib/store";
+	import { authReady, currentUser, isModerator } from "$lib/store";
 	import type { Team, Tournament, TournamentRegistration } from "$lib/types";
 	import { isLocked, isRegistrationWindowOpen } from "$lib/tournamentState";
 	import {
@@ -189,7 +189,9 @@
 		{#if tournament}
 			<h2 class="page-title">{$_("pageTournamentRegisterTeam.pageTitle", { values: { name: tournament.name } })}</h2>
 
-			{#if tournament.visible === false && !$isModerator}
+			{#if !$authReady}
+				<p class="notice">{$_("common.loading")}</p>
+			{:else if tournament.visible === false && !$isModerator}
 				<p class="notice">{$_("pageTournamentRegisterTeam.noPermission")}</p>
 			{:else if !$currentUser}
 				<p class="notice">{$_("pageTournamentRegisterTeam.loginRequired")}</p>

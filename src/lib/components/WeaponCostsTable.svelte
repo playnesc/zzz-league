@@ -4,7 +4,7 @@
 	import { _ } from "$lib/i18n";
 	import { getWeaponAvatar } from "$lib/weaponAvatars";
 	import { engineBaseRankLabels, engineRankLabels, weaponCosts, type WeaponCost } from "$lib/weaponData";
-	import { contributionColor, contributions, type ContributionListItem } from "$lib/contributions";
+	import { contributionColor, contributions, contributionsLoaded, type ContributionListItem } from "$lib/contributions";
 	import ContributionMenu from "./ContributionMenu.svelte";
 	import ContributionProposalPopup from "./ContributionProposalPopup.svelte";
 	import ContributionReviewPopup from "./ContributionReviewPopup.svelte";
@@ -399,7 +399,9 @@
 <div class="log-columns">
 	<div class="card log-card">
 		<h2 class="log-heading rejected">{$_("weaponCostsTable.rejectedChangesTitle")}</h2>
-		{#if rejectedLog.length === 0}
+		{#if !$contributionsLoaded}
+			<p class="notice">{$_("common.loading")}</p>
+		{:else if rejectedLog.length === 0}
 			<p class="notice">{$_("weaponCostsTable.noRejectedProposals")}</p>
 		{:else}
 			<div class="log-list">
@@ -421,7 +423,9 @@
 
 	<div class="card log-card">
 		<h2 class="log-heading approved">{$_("weaponCostsTable.approvedChangesTitle")}</h2>
-		{#if approvedLog.length === 0}
+		{#if !$contributionsLoaded}
+			<p class="notice">{$_("common.loading")}</p>
+		{:else if approvedLog.length === 0}
 			<p class="notice">{$_("weaponCostsTable.noApprovedProposals")}</p>
 		{:else}
 			<div class="log-list">

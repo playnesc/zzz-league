@@ -5,7 +5,7 @@
 	import SidePanel from "$lib/components/SidePanel.svelte";
 	import { getAgentAvatar } from "$lib/agentAvatars";
 	import avatarPlaceholder from "$lib/assets/avatar-placeholder.webp";
-	import { isAdmin } from "$lib/store";
+	import { authReady, isAdmin } from "$lib/store";
 	import type { PlayerListItem, PlayerRole, StaffMember } from "$lib/types";
 
 	let staff = $state<StaffMember[]>([]);
@@ -76,7 +76,9 @@
 	<SidePanel></SidePanel>
 
 	<div class="card main-content">
-		{#if $isAdmin}
+		{#if !$authReady}
+			<p class="notice">{$_("common.loading")}</p>
+		{:else if $isAdmin}
 			<h2 class="page-title">{$_("pageAdmin.title")}</h2>
 
 			<section>

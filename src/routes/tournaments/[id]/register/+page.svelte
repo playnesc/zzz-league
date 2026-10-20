@@ -6,7 +6,7 @@
 	import TournamentMemberRegistrationFields from "$lib/components/TournamentMemberRegistrationFields.svelte";
 	import { _, locale, formatDate } from "$lib/i18n";
 	import { applyForTournament, getTournament, listRegistrations } from "$lib/backend";
-	import { currentUser, isModerator } from "$lib/store";
+	import { authReady, currentUser, isModerator } from "$lib/store";
 	import type { Tournament, TournamentRegistration } from "$lib/types";
 	import { isLocked, isRegistrationWindowOpen, playerTierValue } from "$lib/tournamentState";
 	import {
@@ -168,7 +168,9 @@
 		{#if tournament}
 			<h2 class="page-title">{$_("pageTournamentRegister.pageTitle", { values: { name: tournament.name } })}</h2>
 
-			{#if tournament.visible === false && !$isModerator}
+			{#if !$authReady}
+				<p class="notice">{$_("common.loading")}</p>
+			{:else if tournament.visible === false && !$isModerator}
 				<p class="notice">{$_("pageTournamentRegister.noPermission")}</p>
 			{:else if !$currentUser}
 				<p class="notice">{$_("pageTournamentRegister.loginRequired")}</p>
