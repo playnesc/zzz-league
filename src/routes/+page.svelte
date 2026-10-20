@@ -151,16 +151,17 @@
 						<button class="btn-common current-league-btn" onclick={loadLive}
 							>← {$_("pageHome.currentLeague")}</button
 						>
+					{:else}
+						<label class="filter-toggle">
+							<span class="cb-wrap">
+								<input type="checkbox" bind:checked={showInactivePlayers} class="cb-input" />
+								{#if showInactivePlayers}
+									<svg class="cb-check" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+								{/if}
+							</span>
+							<p>{$_("pageHome.showInactivePlayers")}</p>
+						</label>
 					{/if}
-					<label class="filter-toggle">
-						<span class="cb-wrap">
-							<input type="checkbox" bind:checked={showInactivePlayers} class="cb-input" />
-							{#if showInactivePlayers}
-								<svg class="cb-check" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-							{/if}
-						</span>
-						<p>{$_("pageHome.showInactivePlayers")}</p>
-					</label>
 					<div class="search-field">
 						<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" class="search-icon"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
 						<input
