@@ -2,8 +2,8 @@
 	"common": {
 		"approveRegistration": "Подтвердить регистрацию",
 		"revokeApproval": "Отменить подтверждение",
-		"singleElimination": "Одиночное выбывание",
-		"doubleElimination": "Двойное выбывание",
+		"singleElimination": "Single elimination",
+		"doubleElimination": "Double elimination",
 		"notSet": "Не задано",
 		"versus": "vs",
 		"cancel": "Отмена",

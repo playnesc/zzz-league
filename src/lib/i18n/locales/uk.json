@@ -2,8 +2,8 @@
 	"common": {
 		"approveRegistration": "Підтвердити реєстрацію",
 		"revokeApproval": "Скасувати підтвердження",
-		"singleElimination": "Одинарне вибування",
-		"doubleElimination": "Подвійне вибування",
+		"singleElimination": "Single elimination",
+		"doubleElimination": "Double elimination",
 		"notSet": "Не задано",
 		"versus": "vs",
 		"cancel": "Скасувати",
