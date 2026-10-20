@@ -1,6 +1,3 @@
-import { writable } from "svelte/store";
-import { listAgentCosts } from "./api/communityCosts";
-
 export type Specialty =
 	| "attack"
 	| "stun"
@@ -38,11 +35,3 @@ export interface AgentCost {
 }
 
 export const mindscapeLabels = ["M0", "M1", "M2", "M3", "M4", "M5", "M6"];
-
-// Backed by ZenlessLeague.Api's /api/community-costs/agents — refreshAgentCosts() is called once
-// from the /costs route on mount.
-export const agentCosts = writable<AgentCost[]>([]);
-
-export async function refreshAgentCosts(): Promise<void> {
-	agentCosts.set(await listAgentCosts());
-}

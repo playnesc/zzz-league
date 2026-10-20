@@ -9,12 +9,14 @@
 		resetSeason,
 		setSeasonTimer,
 	} from "$lib/backend";
-	import { refreshSeasonTimer } from "$lib/store";
+	import { getLeagueData } from "$lib/leagueData.svelte";
 	import type { PlayerListItem } from "$lib/types";
 	import { resolve } from "$app/paths";
 	import { onMount } from "svelte";
 	import { _ } from "$lib/i18n";
 	import { confirmDialog, notify, promptDialog } from "$lib/dialogs.svelte";
+
+	const league = getLeagueData();
 
 	let players = $state<PlayerListItem[]>([]);
 
@@ -77,7 +79,7 @@
 		if (hours) {
 			try {
 				await setSeasonTimer(Date.now() + parseFloat(hours) * 3600000);
-				await refreshSeasonTimer();
+				await league.refreshSeasonTimer();
 			} catch (error) {
 				notify(error);
 			}

@@ -1,5 +1,3 @@
-import { writable } from "svelte/store";
-import { listEngineCosts } from "./api/communityCosts";
 import type { Specialty } from "./costData";
 
 export interface WeaponAgentOverride {
@@ -21,11 +19,3 @@ export interface WeaponCost {
 
 export const engineRankLabels = ["R1", "R2", "R3", "R4", "R5"];
 export const engineBaseRankLabels = [...engineRankLabels, ""];
-
-// Backed by ZenlessLeague.Api's /api/community-costs/engines — refreshEngineCosts() is called
-// once from the /costs route on mount.
-export const weaponCosts = writable<WeaponCost[]>([]);
-
-export async function refreshEngineCosts(): Promise<void> {
-	weaponCosts.set(await listEngineCosts());
-}

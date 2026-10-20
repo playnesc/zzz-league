@@ -1,27 +1,30 @@
 <script lang="ts">
-	import { agentCosts, specialties, type Specialty } from "$lib/costData";
+	import { specialties, type Specialty } from "$lib/costData";
 	import { getAgentAvatar } from "$lib/agentAvatars";
 	import { _ } from "$lib/i18n";
 	import { getWeaponAvatar } from "$lib/weaponAvatars";
-	import { engineBaseRankLabels, engineRankLabels, weaponCosts, type WeaponCost } from "$lib/weaponData";
-	import { contributionColor, contributions, contributionsLoaded, type ContributionListItem } from "$lib/contributions";
+	import { engineBaseRankLabels, engineRankLabels, type WeaponCost } from "$lib/weaponData";
+	import { contributionColor, type ContributionListItem } from "$lib/contributions";
+	import { getCostsData } from "$lib/costsData.svelte";
 	import ContributionMenu from "./ContributionMenu.svelte";
 	import ContributionProposalPopup from "./ContributionProposalPopup.svelte";
 	import ContributionReviewPopup from "./ContributionReviewPopup.svelte";
+
+	const costs = getCostsData();
 
 	let activeSpecialty = $state<Specialty>("attack");
 
 	const activeInfo = $derived(specialties.find((s) => s.id === activeSpecialty)!);
 
 	const allAgentOptions = $derived(
-		$agentCosts
+		costs.agentCosts
 			.map((a) => ({ id: a.agentId, name: a.name ?? getAgentAvatar(a.agentId)?.name ?? a.agentId }))
 			.sort((a, b) => a.name.localeCompare(b.name)),
 	);
 
 	function agentDisplay(agentId: string) {
 		const avatar = getAgentAvatar(agentId);
-		const found = $agentCosts.find((a) => a.agentId === agentId);
+		const found = costs.agentCosts.find((a) => a.agentId === agentId);
 		return { name: found?.name ?? avatar?.name ?? agentId, avatarSrc: avatar?.src };
 	}
 
@@ -32,9 +35,9 @@
 
 	const pendingCountBySpecialty = $derived.by(() => {
 		const counts: Partial<Record<Specialty, number>> = {};
-		for (const c of $contributions) {
+		for (const c of costs.contributions) {
 			if (c.status !== "pending" || !c.engineId) continue;
-			const w = $weaponCosts.find((w) => w.engineId === c.engineId);
+			const w = costs.weaponCosts.find((w) => w.engineId === c.engineId);
 			if (!w) continue;
 			counts[w.specialty] = (counts[w.specialty] ?? 0) + 1;
 		}
@@ -42,18 +45,18 @@
 	});
 
 	function buildRow(w: WeaponCost) {
-		const baseAll = $contributions.filter((c) => c.engineId === w.engineId && !c.overrideAgentId);
+		const baseAll = costs.contributions.filter((c) => c.engineId === w.engineId && !c.overrideAgentId);
 		const baseScore = maxScore(baseAll);
 
 		const existingIds = new Set(w.agentOverrides.map((o) => o.agentId));
 		const overrideRows = w.agentOverrides.map((o) => {
-			const contribs = $contributions.filter(
+			const contribs = costs.contributions.filter(
 				(c) => c.engineId === w.engineId && c.overrideAgentId === o.agentId,
 			);
 			return { agentId: o.agentId, costs: o.costs, contribs, pendingScore: maxScore(contribs), isNew: false };
 		});
 
-		const newAgentContribs = $contributions.filter(
+		const newAgentContribs = costs.contributions.filter(
 			(c) =>
 				c.engineId === w.engineId &&
 				c.overrideAgentId &&
@@ -62,7 +65,7 @@
 		);
 		const newAgentIds = [...new Set(newAgentContribs.map((c) => c.overrideAgentId!))];
 		const newRows = newAgentIds.map((agentId) => {
-			const contribs = $contributions.filter((c) => c.engineId === w.engineId && c.overrideAgentId === agentId);
+			const contribs = costs.contributions.filter((c) => c.engineId === w.engineId && c.overrideAgentId === agentId);
 			const latest = [...contribs].sort((a, b) => b.createdAt - a.createdAt)[0];
 			return {
 				agentId,
@@ -90,7 +93,7 @@
 		};
 	}
 
-	const allWeaponRows = $derived($weaponCosts.map(buildRow));
+	const allWeaponRows = $derived(costs.weaponCosts.map(buildRow));
 
 	const rows = $derived(
 		allWeaponRows
@@ -233,19 +236,19 @@
 	}
 
 	const approvedLog = $derived(
-		[...$contributions]
+		[...costs.contributions]
 			.filter((c) => c.engineId && c.status === "approved")
 			.sort((a, b) => b.createdAt - a.createdAt),
 	);
 
 	const rejectedLog = $derived(
-		[...$contributions]
+		[...costs.contributions]
 			.filter((c) => c.engineId && c.status === "rejected")
 			.sort((a, b) => b.createdAt - a.createdAt),
 	);
 
 	function weaponDisplay(engineId: string) {
-		const w = $weaponCosts.find((w) => w.engineId === engineId);
+		const w = costs.weaponCosts.find((w) => w.engineId === engineId);
 		return { name: w?.name ?? engineId, avatarSrc: getWeaponAvatar(engineId)?.src, weapon: w };
 	}
 
@@ -399,7 +402,7 @@
 <div class="log-columns">
 	<div class="card log-card">
 		<h2 class="log-heading rejected">{$_("weaponCostsTable.rejectedChangesTitle")}</h2>
-		{#if !$contributionsLoaded}
+		{#if !costs.contributionsLoaded}
 			<p class="notice">{$_("common.loading")}</p>
 		{:else if rejectedLog.length === 0}
 			<p class="notice">{$_("weaponCostsTable.noRejectedProposals")}</p>
@@ -423,7 +426,7 @@
 
 	<div class="card log-card">
 		<h2 class="log-heading approved">{$_("weaponCostsTable.approvedChangesTitle")}</h2>
-		{#if !$contributionsLoaded}
+		{#if !costs.contributionsLoaded}
 			<p class="notice">{$_("common.loading")}</p>
 		{:else if approvedLog.length === 0}
 			<p class="notice">{$_("weaponCostsTable.noApprovedProposals")}</p>

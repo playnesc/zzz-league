@@ -6,15 +6,16 @@
 	import Leaderboard from "$lib/components/Leaderboard.svelte";
 	import SidePanel from "$lib/components/SidePanel.svelte";
 	import TournamentCard from "$lib/components/TournamentCard.svelte";
-	import { seasonTimerEndsAt, tournaments, refreshSeasonTimer } from "$lib/store";
 	import { getAuthSession } from "$lib/auth.svelte";
+	import { getLeagueData } from "$lib/leagueData.svelte";
 	import { capDefaultHeight } from "$lib/actions/capDefaultHeight";
 	import { TOURNAMENT_STATE } from "$lib/tournamentState";
 
 	const session = getAuthSession();
+	const league = getLeagueData();
 
 	let filteredTournaments = $derived(
-		$tournaments
+		league.tournaments
 			.filter((t) => {
 				if (t.visible === false && !session.isModerator) return false;
 				if (t.state !== TOURNAMENT_STATE.COMPLETE) return true;
@@ -55,8 +56,8 @@
 	let now = $state(Date.now());
 
 	let timerParts = $derived.by(() => {
-		if (!$seasonTimerEndsAt) return null;
-		const diff = $seasonTimerEndsAt - now;
+		if (!league.seasonTimerEndsAt) return null;
+		const diff = league.seasonTimerEndsAt - now;
 		if (diff <= 0) return { ended: true as const };
 		return {
 			ended: false as const,
@@ -73,7 +74,7 @@
 			livePlayers = loaded;
 			livePlayersLoaded = true;
 		});
-		refreshSeasonTimer();
+		league.refreshSeasonTimer();
 
 		const interval = setInterval(() => {
 			now = Date.now();

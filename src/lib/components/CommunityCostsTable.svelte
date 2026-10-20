@@ -1,31 +1,31 @@
 <script lang="ts">
 	import { getAgentAvatar } from "$lib/agentAvatars";
 	import {
-		agentCosts,
 		mindscapeLabels,
 		specialties,
 		type Specialty,
 	} from "$lib/costData";
 	import {
 		contributionColor,
-		contributions,
-		contributionsLoaded,
 		type ContributionListItem,
 	} from "$lib/contributions";
+	import { getCostsData } from "$lib/costsData.svelte";
 	import ContributionMenu from "./ContributionMenu.svelte";
 	import ContributionProposalPopup from "./ContributionProposalPopup.svelte";
 	import ContributionReviewPopup from "./ContributionReviewPopup.svelte";
 	import { _ } from "$lib/i18n";
+
+	const costs = getCostsData();
 
 	let activeSpecialty = $state<Specialty>("attack");
 
 	const activeInfo = $derived(specialties.find((s) => s.id === activeSpecialty)!);
 
 	const rows = $derived(
-		$agentCosts
+		costs.agentCosts
 			.filter((a) => a.specialty === activeSpecialty)
 			.map((a) => {
-				const agentContribs = $contributions.filter((c) => c.agentId === a.agentId);
+				const agentContribs = costs.contributions.filter((c) => c.agentId === a.agentId);
 				const pending = agentContribs.filter((c) => c.status === "pending");
 				const pendingScore = pending.length ? Math.max(...pending.map((c) => c.score)) : null;
 				return {
@@ -41,16 +41,16 @@
 	);
 
 	function agentInfo(agentId: string) {
-		const data = $agentCosts.find((a) => a.agentId === agentId);
+		const data = costs.agentCosts.find((a) => a.agentId === agentId);
 		const avatar = getAgentAvatar(agentId);
 		return { name: data?.name ?? avatar?.name ?? agentId, avatarSrc: avatar?.src, costs: data?.costs ?? [] };
 	}
 
 	const pendingCountBySpecialty = $derived.by(() => {
 		const counts: Partial<Record<Specialty, number>> = {};
-		for (const c of $contributions) {
+		for (const c of costs.contributions) {
 			if (c.status !== "pending" || !c.agentId) continue;
-			const agent = $agentCosts.find((a) => a.agentId === c.agentId);
+			const agent = costs.agentCosts.find((a) => a.agentId === c.agentId);
 			if (!agent) continue;
 			counts[agent.specialty] = (counts[agent.specialty] ?? 0) + 1;
 		}
@@ -58,13 +58,13 @@
 	});
 
 	const approvedLog = $derived(
-		[...$contributions]
+		[...costs.contributions]
 			.filter((c): c is ContributionListItem & { agentId: string } => !!c.agentId && c.status === "approved")
 			.sort((a, b) => b.createdAt - a.createdAt),
 	);
 
 	const rejectedLog = $derived(
-		[...$contributions]
+		[...costs.contributions]
 			.filter((c): c is ContributionListItem & { agentId: string } => !!c.agentId && c.status === "rejected")
 			.sort((a, b) => b.createdAt - a.createdAt),
 	);
@@ -185,7 +185,7 @@
 <div class="log-columns">
 	<div class="card log-card">
 		<h2 class="log-heading rejected">{$_("communityCostsTable.rejectedHeading")}</h2>
-		{#if !$contributionsLoaded}
+		{#if !costs.contributionsLoaded}
 			<p class="notice">{$_("common.loading")}</p>
 		{:else if rejectedLog.length === 0}
 			<p class="notice">{$_("communityCostsTable.noRejected")}</p>
@@ -207,7 +207,7 @@
 
 	<div class="card log-card">
 		<h2 class="log-heading approved">{$_("communityCostsTable.approvedHeading")}</h2>
-		{#if !$contributionsLoaded}
+		{#if !costs.contributionsLoaded}
 			<p class="notice">{$_("common.loading")}</p>
 		{:else if approvedLog.length === 0}
 			<p class="notice">{$_("communityCostsTable.noApproved")}</p>

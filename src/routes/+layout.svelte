@@ -2,9 +2,9 @@
 	import "../app.css";
 	import { locale, migrateLegacyLocale } from "$lib/i18n";
 
-	import { refreshTournaments, refreshOneTournament } from "$lib/store";
 	import { popups } from "$lib/popups.svelte";
 	import { AuthSession, setAuthSession } from "$lib/auth.svelte";
+	import { LeagueData, setLeagueData } from "$lib/leagueData.svelte";
 
 	import LoginPopup from "$lib/components/LoginPopup.svelte";
 	import PlayerProfilePopup from "$lib/components/PlayerProfilePopup.svelte";
@@ -31,6 +31,7 @@
 	// One session per render (per request on the server), shared with every child via context.
 	// svelte-ignore state_referenced_locally
 	const session = setAuthSession(new AuthSession(data.session));
+	const league = setLeagueData(new LeagueData());
 
 	onMount(() => {
 		migrateLegacyLocale();
@@ -40,7 +41,7 @@
 		// initial one Firebase fires on load.
 		const unsubAuth = onAuthStateChanged(auth, async (user) => {
 			await session.syncFirebaseUser(user);
-			refreshTournaments();
+			league.refreshTournaments();
 			if (user) {
 				await connectIfAuthenticated();
 			} else {
@@ -51,7 +52,7 @@
 		// Every client is auto-joined to the hub's list group (see TournamentHub), so this covers
 		// the home page / tournament archive lists without a per-tournament subscription.
 		const unsubTournamentChanged = onTournamentChanged((tournamentId) => {
-			refreshOneTournament(tournamentId);
+			league.refreshOneTournament(tournamentId);
 		});
 
 		return () => {

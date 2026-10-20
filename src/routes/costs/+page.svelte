@@ -5,13 +5,12 @@
 	import CommunityCostsTable from "$lib/components/CommunityCostsTable.svelte";
 	import WeaponCostsTable from "$lib/components/WeaponCostsTable.svelte";
 	import SidePanel from "$lib/components/SidePanel.svelte";
-	import { refreshAgentCosts } from "$lib/costData";
-	import { refreshContributions } from "$lib/contributions";
+	import { CostsData, setCostsData } from "$lib/costsData.svelte";
 	import { getAuthSession } from "$lib/auth.svelte";
-	import { refreshEngineCosts } from "$lib/weaponData";
 	import { onMount } from "svelte";
 
 	const session = getAuthSession();
+	const costs = setCostsData(new CostsData());
 
 	let activeTab = $state<"agents" | "weapons">("agents");
 	let importing = $state(false);
@@ -20,9 +19,9 @@
 	let engineFileInput = $state<HTMLInputElement | undefined>();
 
 	onMount(() => {
-		refreshAgentCosts();
-		refreshEngineCosts();
-		refreshContributions();
+		costs.refreshAgentCosts();
+		costs.refreshEngineCosts();
+		costs.refreshContributions();
 	});
 
 	async function handleImport(file: File | undefined, kind: "agents" | "engines") {
@@ -33,10 +32,10 @@
 			const csv = await file.text();
 			if (kind === "agents") {
 				await importAgentCostsCsv(csv);
-				await refreshAgentCosts();
+				await costs.refreshAgentCosts();
 			} else {
 				await importEngineCostsCsv(csv);
-				await refreshEngineCosts();
+				await costs.refreshEngineCosts();
 			}
 			importStatus = $_("pageCosts.importSuccess");
 		} catch (error: any) {

@@ -1,11 +1,12 @@
 <script lang="ts">
 	import { modal } from "$lib/actions/modal";
 	import { mindscapeLabels } from "$lib/costData";
-	import { createContribution, createEngineContribution } from "$lib/contributions";
+	import { getCostsData } from "$lib/costsData.svelte";
 	import { _ } from "$lib/i18n";
 	import { getAuthSession } from "$lib/auth.svelte";
 
 	const session = getAuthSession();
+	const costsData = getCostsData();
 
 	type Mode = "agent" | "engine-base" | "engine-agent";
 
@@ -64,11 +65,11 @@
 		status = "";
 		try {
 			if (mode === "agent") {
-				await createContribution(agentId, finalMessage, costs);
+				await costsData.createContribution(agentId, finalMessage, costs);
 			} else if (mode === "engine-base") {
-				await createEngineContribution(engineId, undefined, finalMessage, costs);
+				await costsData.createEngineContribution(engineId, undefined, finalMessage, costs);
 			} else {
-				await createEngineContribution(engineId, selectedAgentId, finalMessage, costs);
+				await costsData.createEngineContribution(engineId, selectedAgentId, finalMessage, costs);
 			}
 			open = false;
 		} catch (error: any) {

@@ -2,19 +2,13 @@
 	import { modal } from "$lib/actions/modal";
 	import type { ReviewVote } from "$lib/api/dtos";
 	import { mindscapeLabels } from "$lib/costData";
-	import {
-		approveContribution,
-		contributionColor,
-		getContribution,
-		rejectContribution,
-		submitReview as apiSubmitReview,
-		submitReviewComment,
-		type ContributionDetail,
-	} from "$lib/contributions";
+	import { contributionColor, getContribution, type ContributionDetail } from "$lib/contributions";
+	import { getCostsData } from "$lib/costsData.svelte";
 	import { getAuthSession } from "$lib/auth.svelte";
 	import { _ } from "$lib/i18n";
 
 	const session = getAuthSession();
+	const costs = getCostsData();
 
 	let {
 		open = $bindable(false),
@@ -85,7 +79,7 @@
 		if (!text) return;
 		discussionDrafts[reviewId] = "";
 		try {
-			contribution = await submitReviewComment(contribution.id, reviewId, text);
+			contribution = await costs.submitReviewComment(contribution.id, reviewId, text);
 		} catch (error: any) {
 			errorMessage = error.message;
 		}
@@ -118,7 +112,7 @@
 		submittingReview = true;
 		errorMessage = "";
 		try {
-			contribution = await apiSubmitReview(contribution.id, vote, comment.trim());
+			contribution = await costs.submitReview(contribution.id, vote, comment.trim());
 		} catch (error: any) {
 			errorMessage = error.message;
 		} finally {
@@ -131,7 +125,7 @@
 		resolving = true;
 		errorMessage = "";
 		try {
-			contribution = await approveContribution(contribution.id);
+			contribution = await costs.approveContribution(contribution.id);
 		} catch (error: any) {
 			errorMessage = error.message;
 		} finally {
@@ -144,7 +138,7 @@
 		resolving = true;
 		errorMessage = "";
 		try {
-			contribution = await rejectContribution(contribution.id);
+			contribution = await costs.rejectContribution(contribution.id);
 		} catch (error: any) {
 			errorMessage = error.message;
 		} finally {
