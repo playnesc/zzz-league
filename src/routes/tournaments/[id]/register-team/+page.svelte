@@ -5,7 +5,7 @@
 	import SidePanel from "$lib/components/SidePanel.svelte";
 	import TournamentMemberRegistrationFields from "$lib/components/TournamentMemberRegistrationFields.svelte";
 	import { applyForTeamTournament, getTournament, listMyTeams, listRegistrations } from "$lib/backend";
-	import { authReady, currentUser, isModerator } from "$lib/store";
+	import { getAuthSession } from "$lib/auth.svelte";
 	import type { Team, Tournament, TournamentRegistration } from "$lib/types";
 	import { isLocked, isRegistrationWindowOpen } from "$lib/tournamentState";
 	import {
@@ -18,6 +18,8 @@
 	import { dateDisplayOptions, isImageTooLarge, MAX_IMAGE_SIZE_MB } from "$lib/uiCommon";
 	import { onMount } from "svelte";
 	import { _, locale, formatDate } from "$lib/i18n";
+
+	const session = getAuthSession();
 
 	const id = $derived(page.params.id);
 
@@ -111,11 +113,11 @@
 	});
 
 	// Reactive rather than a one-shot onMount check: on a full page reload, Firebase auth hasn't
-	// resolved yet on first render, so $currentUser starts out null regardless of whether the
+	// resolved yet on first render, so session.user starts out null regardless of whether the
 	// visitor is actually logged in. A one-shot check here would permanently show "no teams" for
 	// a logged-in user just because auth settled a moment too late (same bug as teams/mine).
 	$effect(() => {
-		const uid = $currentUser?.uid;
+		const uid = session.user?.uid;
 		if (!uid) {
 			myTeams = [];
 			teamsLoaded = true;
@@ -189,11 +191,11 @@
 		{#if tournament}
 			<h2 class="page-title">{$_("pageTournamentRegisterTeam.pageTitle", { values: { name: tournament.name } })}</h2>
 
-			{#if !$authReady}
+			{#if !session.ready}
 				<p class="notice">{$_("common.loading")}</p>
-			{:else if tournament.visible === false && !$isModerator}
+			{:else if tournament.visible === false && !session.isModerator}
 				<p class="notice">{$_("pageTournamentRegisterTeam.noPermission")}</p>
-			{:else if !$currentUser}
+			{:else if !session.user}
 				<p class="notice">{$_("pageTournamentRegisterTeam.loginRequired")}</p>
 			{:else if isLocked(tournament.state) || tournament.challongeTournamentId}
 				<p class="notice">{$_("pageTournamentRegisterTeam.tournamentStarted")}</p>

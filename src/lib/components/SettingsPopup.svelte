@@ -6,7 +6,7 @@
 	import { openDiscordOAuth } from "$lib/discord";
 	import { auth, unlinkDiscord } from "$lib/firebase";
 	import { updateProfile } from "$lib/backend";
-	import { applyPlayerUpdate, currentUser } from "$lib/store";
+	import { getAuthSession } from "$lib/auth.svelte";
 	import { closeSettingsPopup } from "$lib/uiCommon";
 	import {
 		EmailAuthProvider,
@@ -14,7 +14,9 @@
 		updatePassword,
 	} from "firebase/auth";
 
-	let user = $derived($currentUser!);
+	const session = getAuthSession();
+
+	let user = $derived(session.user!);
 	let selectedAvatar = $derived(getAgentAvatar(user.avatar));
 
 	// svelte-ignore state_referenced_locally
@@ -54,7 +56,7 @@
 		if (unlinkingDiscord) return;
 		unlinkingDiscord = true;
 		try {
-			applyPlayerUpdate(await unlinkDiscord());
+			session.applyPlayerUpdate(await unlinkDiscord());
 		} catch (error: any) {
 			status = error.message;
 		} finally {
@@ -99,7 +101,7 @@
 
 			if (newUsername) {
 				try {
-					applyPlayerUpdate(await updateProfile(user.uid, newUsername));
+					session.applyPlayerUpdate(await updateProfile(user.uid, newUsername));
 					successData = true;
 				} catch (error: any) {
 					status = error.message;

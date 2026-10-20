@@ -7,6 +7,8 @@ declare global {
 		// interface Error {}
 		interface Locals {
 			locale: SupportedLocale;
+			// Raw session cookie (see $lib/server/session); unverified until the API accepts it.
+			sessionToken: string | null;
 		}
 		interface PageData {
 			// Rendered into <title> by the root layout.

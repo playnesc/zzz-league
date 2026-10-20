@@ -14,7 +14,7 @@
 		listRegistrations,
 	} from "$lib/backend";
 	import TournamentMatchPopup from "$lib/components/TournamentMatchPopup.svelte";
-	import { isAdmin } from "$lib/store";
+	import { getAuthSession } from "$lib/auth.svelte";
 	import type {
 		HistoryCursor,
 		HistoryEntry,
@@ -25,6 +25,8 @@
 		TournamentMatch,
 	} from "$lib/types";
 	import { dateDisplayOptions, openProfilePopup } from "$lib/uiCommon";
+
+	const session = getAuthSession();
 
 	let { viewerId = undefined }: { viewerId?: string } = $props();
 
@@ -278,7 +280,7 @@
 					<span></span>
 				{/if}
 				<span class="h-date">{formatDate(entry.timestamp)}</span>
-				{#if $isAdmin}
+				{#if session.isAdmin}
 					<button
 						class="h-icon-btn danger"
 						title={$_("common.delete")}

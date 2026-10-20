@@ -1,17 +1,6 @@
-import { derived, get, writable } from 'svelte/store'
-import type { Player, PlayerListItem, PlayerRole, Tournament } from './types';
-import { hasRole } from './roles';
-import { getPlayer, getSeasonTimer, getTournament, listTournaments } from './backend';
-
-export const currentUser = writable<Player | null>(null);
-// False until Firebase Auth has restored (or ruled out) a session and currentUser/role are
-// settled. Until then `currentUser === null` means "don't know yet", not "logged out" — which
-// matters under SSR, where the server always renders that unknown state. Gate logged-out and
-// no-permission UI on this so signed-in users don't see it flash.
-export const authReady = writable(false);
-export const role = writable<PlayerRole>("player");
-export const isAdmin = derived(role, ($role) => hasRole($role, "admin"));
-export const isModerator = derived(role, ($role) => hasRole($role, "moderator"));
+import { writable } from 'svelte/store'
+import type { PlayerListItem, Tournament } from './types';
+import { getSeasonTimer, getTournament, listTournaments } from './backend';
 
 export const tournaments = writable<Tournament[]>([]);
 // Distinguishes "not fetched yet" from "genuinely empty" for empty-state messages.
@@ -51,21 +40,4 @@ export async function refreshOneTournament(tournamentId: string): Promise<void> 
 		next[index] = updated;
 		return next;
 	});
-}
-
-export async function refreshCurrentUser(uid: string): Promise<void> {
-	const player = await getPlayer(uid);
-	currentUser.set(player);
-	role.set(player?.role ?? "player");
-}
-
-// Applies an already-fetched updated Player (from a mutation response) to currentUser, if it's
-// the logged-in user — avoids a redundant re-fetch of data the mutation's response already gave
-// us. (Used to also patch a global players list; that list is gone now — see the player-list
-// refactor — each view owns its own player data instead.)
-export function applyPlayerUpdate(updated: Player): void {
-	if (get(currentUser)?.uid === updated.uid) {
-		currentUser.set(updated);
-		role.set(updated.role);
-	}
 }

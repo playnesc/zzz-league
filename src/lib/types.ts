@@ -41,7 +41,7 @@ export interface Player {
 // Lean shape returned by GET /api/players (optionally filtered by uids) — everything list-context
 // views (leaderboard, pickers, tournament rosters, history rows, profile popups opened from any of
 // those) actually render. Omits discordId/role, which only ever matter for the
-// logged-in user's own full Player (fetched separately via getPlayer/$currentUser).
+// logged-in user's own full Player (fetched separately via getPlayer/AuthSession.user).
 export interface PlayerListItem {
 	uid: string;
 	name: string;

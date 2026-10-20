@@ -5,8 +5,10 @@
 	import TeamDetailsPopup from "$lib/components/TeamDetailsPopup.svelte";
 	import TeamFormPopup from "$lib/components/TeamFormPopup.svelte";
 	import TeamRow from "$lib/components/TeamRow.svelte";
-	import { authReady, currentUser, isAdmin } from "$lib/store";
+	import { getAuthSession } from "$lib/auth.svelte";
 	import type { Team } from "$lib/types";
+
+	const session = getAuthSession();
 
 	let teams = $state<Team[]>([]);
 	let loading = $state(true);
@@ -16,22 +18,22 @@
 	let selectedTeam = $state<Team | null>(null);
 
 	async function load() {
-		if (!$currentUser) {
+		if (!session.user) {
 			// On a full page reload, Firebase auth hasn't resolved yet on first render — this
 			// isn't "logged out", it's "don't know yet". The $effect below re-runs load() once
-			// $currentUser actually settles (to a user or to null), so this just clears the
+			// session.user actually settles (to a user or to null), so this just clears the
 			// spinner instead of leaving it stuck forever waiting for a retry that never comes.
 			teams = [];
 			loading = false;
 			return;
 		}
 		loading = true;
-		teams = await listMyTeams($currentUser.uid);
+		teams = await listMyTeams(session.user.uid);
 		loading = false;
 	}
 
 	$effect(() => {
-		$currentUser;
+		session.user;
 		load();
 	});
 
@@ -72,9 +74,9 @@
 			>
 		</div>
 
-		{#if !$authReady}
+		{#if !session.ready}
 			<p class="notice">{$_("common.loading")}</p>
-		{:else if !$currentUser}
+		{:else if !session.user}
 			<p class="notice">{$_("pageTeamsMine.loginPrompt")}</p>
 		{:else if loading}
 			<p class="notice">{$_("common.loading")}</p>

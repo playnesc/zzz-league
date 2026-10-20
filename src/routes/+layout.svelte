@@ -6,15 +6,12 @@
 		profileUser,
 		settingsOpen,
 		loginOpen,
-		currentUser,
-		role,
-		authReady,
 		viewingImage,
 		viewingNexusResult,
-		refreshCurrentUser,
 		refreshTournaments,
 		refreshOneTournament,
 	} from "$lib/store";
+	import { AuthSession, setAuthSession } from "$lib/auth.svelte";
 
 	import LoginPopup from "$lib/components/LoginPopup.svelte";
 	import PlayerProfilePopup from "$lib/components/PlayerProfilePopup.svelte";
@@ -38,6 +35,10 @@
 	// svelte-ignore state_referenced_locally
 	locale.set(data.locale);
 
+	// One session per render (per request on the server), shared with every child via context.
+	// svelte-ignore state_referenced_locally
+	const session = setAuthSession(new AuthSession(data.session));
+
 	let profileOpen = $state(false);
 	let imageViewerOpen = $state(false);
 
@@ -53,19 +54,11 @@
 		// moderators/admins), so it's (re)fetched on every auth state change — including the
 		// initial one Firebase fires on load.
 		const unsubAuth = onAuthStateChanged(auth, async (user) => {
+			await session.syncFirebaseUser(user);
+			refreshTournaments();
 			if (user) {
-				try {
-					await refreshCurrentUser(user.uid);
-				} finally {
-					$authReady = true;
-				}
-				refreshTournaments();
 				await connectIfAuthenticated();
 			} else {
-				$currentUser = null;
-				$role = "player";
-				$authReady = true;
-				refreshTournaments();
 				await disconnect();
 			}
 		});

@@ -7,7 +7,7 @@
 	import NexusResultEmbed from "$lib/components/NexusResultEmbed.svelte";
 	import { _ } from "$lib/i18n";
 	import { useObjectUrlPreview } from "$lib/imagePreview.svelte.js";
-	import { currentUser, isAdmin, isModerator } from "$lib/store";
+	import { getAuthSession } from "$lib/auth.svelte";
 	import {
 		bustCache,
 		filesFromImageFile,
@@ -17,6 +17,8 @@
 		openImagePopup,
 		pasteImageFromClipboard,
 	} from "$lib/uiCommon";
+
+	const session = getAuthSession();
 
 	let {
 		open = $bindable(false),
@@ -31,23 +33,23 @@
 	let defaultResult = $derived(isDeadlyAssault ? "0" : "00:00");
 
 	function isMemberOfTeam(teamId: string | null) {
-		if (!teamId || !$currentUser) return false;
+		if (!teamId || !session.user) return false;
 		const team = teamsById.get(teamId);
 		return (
 			!!team &&
-			(team.creator.uid === $currentUser.uid ||
-				team.player2.uid === $currentUser.uid)
+			(team.creator.uid === session.user.uid ||
+				team.player2.uid === session.user.uid)
 		);
 	}
 
 	let myGame = $derived(
 		isTeamMatch
 			? isMemberOfTeam(match.p1TeamId) || isMemberOfTeam(match.p2TeamId)
-			: $currentUser?.uid == match.p1 || $currentUser?.uid == match.p2,
+			: session.user?.uid == match.p1 || session.user?.uid == match.p2,
 	);
 	let canApproveOwnResult = $derived(match.state !== "complete" && myGame);
 	let canAdminSetResult = $derived(
-		($isAdmin || $isModerator) && tournament.state !== "complete",
+		(session.isAdmin || session.isModerator) && tournament.state !== "complete",
 	);
 
 	let inputScreenshot = $state<FileList | null>(null);
@@ -152,7 +154,7 @@
 	}
 
 	// Players pick their own side ("I'm X"); moderators pick which side P1 is.
-	let iAmP1 = $derived($currentUser?.uid === match.p1);
+	let iAmP1 = $derived(session.user?.uid === match.p1);
 
 	function pickNexusSide(target: "own" | "admin", side: NexusSide) {
 		const draft = target === "own" ? ownNexus : adminNexus;

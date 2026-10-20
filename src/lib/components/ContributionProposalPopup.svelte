@@ -3,7 +3,9 @@
 	import { mindscapeLabels } from "$lib/costData";
 	import { createContribution, createEngineContribution } from "$lib/contributions";
 	import { _ } from "$lib/i18n";
-	import { currentUser } from "$lib/store";
+	import { getAuthSession } from "$lib/auth.svelte";
+
+	const session = getAuthSession();
 
 	type Mode = "agent" | "engine-base" | "engine-agent";
 
@@ -54,7 +56,7 @@
 	);
 
 	async function submit() {
-		if (submitting || !$currentUser) return;
+		if (submitting || !session.user) return;
 		const finalMessage = message.trim() || $_("contributionProposalPopup.noComment");
 		if (mode === "engine-agent" && !selectedAgentId) return;
 
@@ -108,13 +110,13 @@
 				{/each}
 			</div>
 			<textarea rows="3" placeholder={$_("contributionProposalPopup.reasonPlaceholder")} bind:value={message}></textarea>
-			{#if !$currentUser}
+			{#if !session.user}
 				<p class="notice">{$_("contributionProposalPopup.loginRequired")}</p>
 			{:else if status}
 				<p class="notice error">{status}</p>
 			{/if}
 			<div class="btn-row">
-				<button class="btn-common btn-play" onclick={submit} disabled={submitting || !$currentUser}>
+				<button class="btn-common btn-play" onclick={submit} disabled={submitting || !session.user}>
 					{submitting ? $_("contributionProposalPopup.submitting") : $_("contributionProposalPopup.submitProposal")}
 				</button>
 				<button class="btn-common" onclick={() => (open = false)}>{$_("common.cancel")}</button>

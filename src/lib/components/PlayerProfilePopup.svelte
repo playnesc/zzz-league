@@ -4,10 +4,12 @@
 	import { getAgentAvatar } from "$lib/agentAvatars";
 	import avatarPlaceholder from "$lib/assets/avatar-placeholder.webp";
 	import { _ } from "$lib/i18n";
-	import { isAdmin } from "$lib/store";
+	import { getAuthSession } from "$lib/auth.svelte";
 	import type { PlayerListItem } from "$lib/types";
 	import { closeProfilePopup, getTier } from "$lib/uiCommon";
 	import PointsDelta from "$lib/components/PointsDelta.svelte";
+
+	const session = getAuthSession();
 
 	let { player = null }: { player?: PlayerListItem | null } = $props();
 
@@ -97,7 +99,7 @@
 						{/if}
 						<span class="copy-icon">{@render copyIcon()}</span>
 					</button>
-					{#if $isAdmin}
+					{#if session.isAdmin}
 						<button
 							type="button"
 							class="info-card"

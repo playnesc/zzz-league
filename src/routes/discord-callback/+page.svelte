@@ -4,6 +4,9 @@
 	import { resolve } from "$app/paths";
 	import { handleDiscordCallback } from "$lib/discord";
 	import { _ } from "$lib/i18n";
+	import { getAuthSession } from "$lib/auth.svelte";
+
+	const session = getAuthSession();
 
 	let error = $state(false);
 	let errorText = $state("");
@@ -11,7 +14,8 @@
 	onMount(() => {
 		async function init() {
 			try {
-				await handleDiscordCallback();
+				const linked = await handleDiscordCallback();
+				if (linked) session.applyPlayerUpdate(linked);
 				goto(resolve("/"));
 			} catch (e: any) {
 				error = true;

@@ -1,11 +1,13 @@
 <script lang="ts">
 	import { approveRegistration } from "$lib/backend";
-	import { isAdmin, isModerator } from "$lib/store";
+	import { getAuthSession } from "$lib/auth.svelte";
 	import type { RegisteredPlayer, Tournament } from "$lib/types";
 	import { hasTournamentStarted } from "$lib/tournamentState";
 	import { getLvl, getTier, openProfilePopup } from "$lib/uiCommon";
 	import PointsDelta from "$lib/components/PointsDelta.svelte";
 	import { _ } from "$lib/i18n";
+
+	const session = getAuthSession();
 
 	interface Props {
 		registrations: RegisteredPlayer[];
@@ -46,7 +48,7 @@
 	}
 
 	let canViewRegistrations = $derived(
-		$isAdmin || $isModerator || hasTournamentStarted(tournament?.state),
+		session.isAdmin || session.isModerator || hasTournamentStarted(tournament?.state),
 	);
 </script>
 
@@ -60,7 +62,7 @@
 			<th>{$_("tournamentPlayerTable.lvlColumn")}</th>
 			<th>{$_("tournamentPlayerTable.confirmedColumn")}</th>
 			{#if canViewRegistrations}<th>{$_("tournamentPlayerTable.registrationColumn")}</th>{/if}
-			{#if $isAdmin && !hideOptions}<th>{$_("tournamentPlayerTable.optionsColumn")}</th>{/if}
+			{#if session.isAdmin && !hideOptions}<th>{$_("tournamentPlayerTable.optionsColumn")}</th>{/if}
 		</tr>
 	</thead>
 	<tbody>
@@ -98,7 +100,7 @@
 						>
 					</td>
 				{/if}
-				{#if $isAdmin && !hideOptions}
+				{#if session.isAdmin && !hideOptions}
 					<td class="options-cell">
 						<button
 							class="icon-btn"

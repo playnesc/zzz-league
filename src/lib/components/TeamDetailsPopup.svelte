@@ -3,9 +3,11 @@
 	import { modal } from "$lib/actions/modal";
 	import { deleteTeam, listPlayers } from "$lib/backend";
 	import { _ } from "$lib/i18n";
-	import { currentUser, isAdmin } from "$lib/store";
+	import { getAuthSession } from "$lib/auth.svelte";
 	import type { PlayerListItem, Team } from "$lib/types";
 	import { bustCache, openProfilePopup } from "$lib/uiCommon";
+
+	const session = getAuthSession();
 
 	let {
 		open = $bindable(false),
@@ -22,11 +24,11 @@
 	// Only the team's two players (or an admin) may edit/delete — mirrors the backend's
 	// PUT/DELETE /api/teams/{id} membership check.
 	let isMember = $derived(
-		!!$currentUser &&
+		!!session.user &&
 			!!team &&
-			($currentUser.uid === team.creator.uid || $currentUser.uid === team.player2.uid),
+			(session.user.uid === team.creator.uid || session.user.uid === team.player2.uid),
 	);
-	let canEdit = $derived(isMember || $isAdmin);
+	let canEdit = $derived(isMember || session.isAdmin);
 
 	let deleting = $state(false);
 

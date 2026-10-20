@@ -10,12 +10,14 @@
 	import { auth } from "$lib/firebase";
 	import { signOut } from "firebase/auth";
 	import AdminPanel from "./AdminPanel.svelte";
-	import { authReady, currentUser, isAdmin } from "$lib/store";
+	import { getAuthSession } from "$lib/auth.svelte";
 	import { resolve } from "$app/paths";
 	import { _ } from "$lib/i18n";
 	import { onMount } from "svelte";
 
-	let avatar = $derived(getAgentAvatar($currentUser?.avatar));
+	const session = getAuthSession();
+
+	let avatar = $derived(getAgentAvatar(session.user?.avatar));
 
 	// The rules are reference material: open beside the content on desktop, collapsed on phones
 	// where the side panel stacks above the leaderboard. The server can't see the viewport, so it
@@ -28,10 +30,10 @@
 </script>
 
 <div class="side-panel">
-	{#if !$authReady}
-		<!-- Holds the login card's space until we know which card to show (see authReady). -->
+	{#if !session.ready}
+		<!-- Holds the login card's space until we know which card to show (see AuthSession.ready). -->
 		<div class="card auth-pending" aria-hidden="true"></div>
-	{:else if !$currentUser}
+	{:else if !session.user}
 		<div class="card">
 			<div class="btn-row">
 				<button class="btn-common btn-play" onclick={openLoginPopup}
@@ -43,7 +45,7 @@
 		<div class="card">
 			<button
 				class="user-label"
-				onclick={() => openProfilePopup($currentUser)}
+				onclick={() => session.user && openProfilePopup(session.user)}
 			>
 				<span
 					class="avatar-wrap"
@@ -53,7 +55,7 @@
 						<img class="user-avatar" src={avatar.src} alt={avatar.name} />
 					{/if}
 				</span>
-				<span class="user-name">{$currentUser.name}</span>
+				<span class="user-name">{session.user.name}</span>
 			</button>
 			<div class="divider"></div>
 			<div class="nav-list">
@@ -65,7 +67,7 @@
 					<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
 					{$_("sidePanel.myTeams")}
 				</a>
-				<a class="nav-item" href={resolve(`/history/${$currentUser.uid}`)}>
+				<a class="nav-item" href={resolve(`/history/${session.user.uid}`)}>
 					<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15.5 14"/></svg>
 					{$_("sidePanel.myHistory")}
 				</a>
@@ -78,7 +80,7 @@
 		</div>
 	{/if}
 
-	{#if !$isAdmin}
+	{#if !session.isAdmin}
 		<details class="card rules-card" bind:open={rulesOpen}>
 			<summary>
 				<h2>
@@ -102,7 +104,7 @@
 		</details>
 	{/if}
 
-	{#if $isAdmin}
+	{#if session.isAdmin}
 		<AdminPanel />
 	{/if}
 </div>

@@ -3,9 +3,11 @@
 	import { createTeam, listPlayers, updateTeam } from "$lib/backend";
 	import { useObjectUrlPreview } from "$lib/imagePreview.svelte.js";
 	import { _ } from "$lib/i18n";
-	import { currentUser } from "$lib/store";
+	import { getAuthSession } from "$lib/auth.svelte";
 	import type { PlayerListItem, Team } from "$lib/types";
 	import { bustCache, isImageTooLarge, MAX_IMAGE_SIZE_MB, openImagePopup } from "$lib/uiCommon";
+
+	const session = getAuthSession();
 
 	let {
 		open = $bindable(false),
@@ -48,7 +50,7 @@
 	let availablePlayers = $derived(
 		players.filter(
 			(p) =>
-				p.uid !== $currentUser?.uid &&
+				p.uid !== session.user?.uid &&
 				p.name.toLowerCase().includes(searchQuery.toLowerCase()),
 		),
 	);
@@ -59,7 +61,7 @@
 
 	async function handleSave() {
 		// Player 2 is fixed at creation — an edit only ever touches name/photo.
-		if (saving || !name.trim() || (!isEdit && !selectedPlayer2Uid) || !$currentUser) return;
+		if (saving || !name.trim() || (!isEdit && !selectedPlayer2Uid) || !session.user) return;
 
 		const photo = photoFile?.[0] ?? null;
 		if (photo && isImageTooLarge(photo)) {
@@ -72,7 +74,7 @@
 		try {
 			const saved = isEdit
 				? await updateTeam(team!.id, name.trim(), photo)
-				: await createTeam($currentUser.uid, selectedPlayer2Uid, name.trim(), photo);
+				: await createTeam(session.user.uid, selectedPlayer2Uid, name.trim(), photo);
 			onSaved?.(saved);
 		} catch (error: any) {
 			status = error.message;

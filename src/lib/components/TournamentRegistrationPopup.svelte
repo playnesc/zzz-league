@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { modal } from "$lib/actions/modal";
 	import { _ } from "$lib/i18n";
-	import { currentUser, isAdmin, isModerator } from "$lib/store";
+	import { getAuthSession } from "$lib/auth.svelte";
 	import { hasTournamentStarted } from "$lib/tournamentState";
 	import { bustCache, openImagePopup } from "$lib/uiCommon";
 	import type {
@@ -10,6 +10,8 @@
 		Tournament,
 		TournamentRegistration,
 	} from "$lib/types";
+
+	const session = getAuthSession();
 
 	let {
 		open = $bindable(false),
@@ -28,10 +30,10 @@
 	// A team registration's two members are treated identically — either one is "the" registrant
 	// for view/edit-permission purposes, same as either member being allowed to approve/cancel.
 	let isOwnRegistration = $derived(
-		!!$currentUser &&
-			($currentUser.uid === player1?.uid || $currentUser.uid === player2?.uid),
+		!!session.user &&
+			(session.user.uid === player1?.uid || session.user.uid === player2?.uid),
 	);
-	let canViewSensitive = $derived($isAdmin || $isModerator || isOwnRegistration);
+	let canViewSensitive = $derived(session.isAdmin || session.isModerator || isOwnRegistration);
 	let canViewHoyolab = $derived(
 		canViewSensitive && !hasTournamentStarted(tournament?.state),
 	);

@@ -6,11 +6,13 @@
 	import SidePanel from "$lib/components/SidePanel.svelte";
 	import TournamentFormFields from "$lib/components/TournamentFormFields.svelte";
 	import { _ } from "$lib/i18n";
-	import { authReady, isAdmin } from "$lib/store";
+	import { getAuthSession } from "$lib/auth.svelte";
 	import { isLocked } from "$lib/tournamentState";
 	import type { TournamentGameMode, TournamentRegistrationKind } from "$lib/types";
 	import { parseAndValidateTournamentForm, toDateTimeLocal } from "$lib/tournamentForm";
 	import { onMount } from "svelte";
+
+	const session = getAuthSession();
 
 	const id = $derived(page.params.id!);
 
@@ -155,9 +157,9 @@
 	<SidePanel></SidePanel>
 
 	<div class="card main-content">
-		{#if !$authReady}
+		{#if !session.ready}
 			<p class="notice">{$_("common.loading")}</p>
-		{:else if $isAdmin}
+		{:else if session.isAdmin}
 			<h2 class="page-title">{$_("pageTournamentEdit.pageTitle")}</h2>
 
 			{#if !loaded}

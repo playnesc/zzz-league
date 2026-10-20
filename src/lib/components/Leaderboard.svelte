@@ -3,11 +3,13 @@
 	import { _ } from "$lib/i18n";
 	import { getAgentAvatar } from "$lib/agentAvatars";
 	import avatarPlaceholder from "$lib/assets/avatar-placeholder.webp";
-	import { isAdmin } from "$lib/store";
+	import { getAuthSession } from "$lib/auth.svelte";
 	import type { Player, PlayerListItem } from "$lib/types";
 	import { getLvl, getTier, openProfilePopup } from "$lib/uiCommon";
 	import PointsDelta from "$lib/components/PointsDelta.svelte";
 	import { confirmDialog, notify, promptDialog } from "$lib/dialogs";
+
+	const session = getAuthSession();
 
 	const INACTIVITY_THRESHOLD_MS = 90 * 24 * 60 * 60 * 1000;
 
@@ -123,7 +125,7 @@
 			<th>{$_("leaderboard.playerColumn")}</th>
 			<th class="align-right">{$_("leaderboard.eloColumn")}</th>
 			<th class="align-right">{$_("leaderboard.lvlColumn")}</th>
-			{#if $isAdmin && !hideOptions}<th class="align-right">{$_("leaderboard.optionsColumn")}</th>{/if}
+			{#if session.isAdmin && !hideOptions}<th class="align-right">{$_("leaderboard.optionsColumn")}</th>{/if}
 		</tr>
 	</thead>
 	<tbody>
@@ -177,7 +179,7 @@
 					<b>{elo}</b>
 				</td>
 				<td class="align-right"><span class="lvl-badge">L{getLvl(elo)}</span></td>
-				{#if $isAdmin && !hideOptions}
+				{#if session.isAdmin && !hideOptions}
 					<td class="options-cell">
 						<button
 							class="icon-btn"

@@ -6,7 +6,7 @@
 	import TournamentMemberRegistrationFields from "$lib/components/TournamentMemberRegistrationFields.svelte";
 	import { _, locale, formatDate } from "$lib/i18n";
 	import { applyForTournament, getMyLastRegistration, getTournament, listRegistrations } from "$lib/backend";
-	import { authReady, currentUser, isModerator } from "$lib/store";
+	import { getAuthSession } from "$lib/auth.svelte";
 	import type { LastRegistrationData, Tournament, TournamentRegistration } from "$lib/types";
 	import { isLocked, isRegistrationWindowOpen, playerTierValue } from "$lib/tournamentState";
 	import {
@@ -24,6 +24,8 @@
 		MAX_IMAGE_SIZE_MB,
 	} from "$lib/uiCommon";
 	import { onMount } from "svelte";
+
+	const session = getAuthSession();
 
 	const id = $derived(page.params.id);
 
@@ -46,7 +48,7 @@
 		applyDetailsToMemberForm(form, reg.player1);
 	}
 
-	let currentUserTier = $derived($currentUser ? playerTierValue($currentUser) : 0);
+	let currentUserTier = $derived(session.user ? playerTierValue(session.user) : 0);
 	let tierEligible = $derived(
 		!!tournament &&
 			currentUserTier >= tournament.minTier &&
@@ -106,12 +108,12 @@
 			return;
 		}
 
-		if (!$currentUser) return;
+		if (!session.user) return;
 
 		showErrors = false;
 		isRegistering = true;
 		try {
-			await applyForTournament(tournament.id, $currentUser.uid, memberRegistrationFormToInput(form));
+			await applyForTournament(tournament.id, session.user.uid, memberRegistrationFormToInput(form));
 			await goto(resolve(`/tournaments/${tournament.id}`));
 		} catch (error: any) {
 			status = error.message;
@@ -138,7 +140,7 @@
 	});
 
 	$effect(() => {
-		const uid = $currentUser?.uid;
+		const uid = session.user?.uid;
 		const tournamentId = id;
 		if (!uid || !tournamentId) {
 			myRegistration = null;
@@ -148,7 +150,7 @@
 		}
 
 		let cancelled = false;
-		// Fetched here rather than kept on $currentUser, so it reflects registrations made earlier
+		// Fetched here rather than kept on session.user, so it reflects registrations made earlier
 		// in this session. A failed fetch only loses the prefill button, never the form.
 		Promise.all([
 			listRegistrations(tournamentId),
@@ -174,11 +176,11 @@
 		{#if tournament}
 			<h2 class="page-title">{$_("pageTournamentRegister.pageTitle", { values: { name: tournament.name } })}</h2>
 
-			{#if !$authReady}
+			{#if !session.ready}
 				<p class="notice">{$_("common.loading")}</p>
-			{:else if tournament.visible === false && !$isModerator}
+			{:else if tournament.visible === false && !session.isModerator}
 				<p class="notice">{$_("pageTournamentRegister.noPermission")}</p>
-			{:else if !$currentUser}
+			{:else if !session.user}
 				<p class="notice">{$_("pageTournamentRegister.loginRequired")}</p>
 			{:else if !tierEligible}
 				<p class="notice">{$_("pageTournamentRegister.tierNotEligible")}</p>

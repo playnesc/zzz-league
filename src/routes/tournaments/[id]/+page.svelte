@@ -37,7 +37,7 @@
 		onRegistrationChanged,
 		onTournamentChanged,
 	} from "$lib/signalr";
-	import { currentUser, isAdmin, isModerator } from "$lib/store";
+	import { getAuthSession } from "$lib/auth.svelte";
 	import type {
 		PlayerListItem,
 		RegisteredPlayer,
@@ -63,6 +63,8 @@
 	import { capDefaultHeight } from "$lib/actions/capDefaultHeight";
 	import { onMount } from "svelte";
 
+	const session = getAuthSession();
+
 	let { data } = $props();
 
 	const id = $derived(page.params.id);
@@ -79,13 +81,13 @@
 	// whole roster (see the player-list refactor: no more global players/playersByUid cache).
 	let registeredPlayersData = $state<PlayerListItem[]>([]);
 	let myRegistration = $derived(
-		$currentUser
+		session.user
 			? (registrations.find((r) => {
-					if (r.playerId === $currentUser!.uid) return true;
+					if (r.playerId === session.user!.uid) return true;
 					const team = r.teamId ? teamsById.get(r.teamId) : undefined;
 					return (
 						!!team &&
-						(team.creator.uid === $currentUser!.uid || team.player2.uid === $currentUser!.uid)
+						(team.creator.uid === session.user!.uid || team.player2.uid === session.user!.uid)
 					);
 				}) ?? null)
 			: null,
@@ -176,8 +178,8 @@
 	});
 
 	let currentUserParticipates = $derived(
-		!!$currentUser &&
-			registeredPlayers.some((p) => p.player.uid === $currentUser!.uid),
+		!!session.user &&
+			registeredPlayers.some((p) => p.player.uid === session.user!.uid),
 	);
 
 	let filteredMatches = $derived(
@@ -187,8 +189,8 @@
 			if (
 				showOnlyMine &&
 				currentUserParticipates &&
-				m.p1 !== $currentUser!.uid &&
-				m.p2 !== $currentUser!.uid
+				m.p1 !== session.user!.uid &&
+				m.p2 !== session.user!.uid
 			)
 				return false;
 			if (matchSearchQuery) {
@@ -204,9 +206,9 @@
 		}),
 	);
 
-	let canView = $derived(tournament?.visible !== false || $isModerator);
+	let canView = $derived(tournament?.visible !== false || session.isModerator);
 
-	let currentUserTier = $derived($currentUser ? playerTierValue($currentUser) : 0);
+	let currentUserTier = $derived(session.user ? playerTierValue(session.user) : 0);
 	let tierEligible = $derived(
 		!!tournament &&
 			currentUserTier >= tournament.minTier &&
@@ -243,7 +245,7 @@
 	// Presentational — mirrors the three conditions gating the individual buttons inside
 	// .actions-user, so the wrapper (and its divider) only renders when it will have content.
 	let hasUserActions = $derived(
-		!!$currentUser &&
+		!!session.user &&
 			!!tournament &&
 			((registrationWindowOpen && (tournament.registrationType === "team" || tierEligible)) ||
 				!!myRegistration),
@@ -650,9 +652,9 @@
 				</div>
 			</div>
 
-			{#if $isAdmin || hasUserActions}
+			{#if session.isAdmin || hasUserActions}
 				<div class="tournament-actions">
-					{#if $isAdmin}
+					{#if session.isAdmin}
 						<div class="actions-admin">
 							<button
 								class="btn-common btn-danger-ghost"
@@ -893,7 +895,7 @@
 									></span>
 									<button
 										type="button"
-										class="match-player-name hover-emphasis {p1Class} {match.p1 === $currentUser?.uid
+										class="match-player-name hover-emphasis {p1Class} {match.p1 === session.user?.uid
 											? 'match-player-self'
 											: ''}"
 										onclick={(e) => {
@@ -923,7 +925,7 @@
 								<div class="match-side match-side-right">
 									<button
 										type="button"
-										class="match-player-name hover-emphasis {p2Class} {match.p2 === $currentUser?.uid
+										class="match-player-name hover-emphasis {p2Class} {match.p2 === session.user?.uid
 											? 'match-player-self'
 											: ''}"
 										onclick={(e) => {

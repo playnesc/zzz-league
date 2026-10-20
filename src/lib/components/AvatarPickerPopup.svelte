@@ -3,7 +3,9 @@
 	import { agentAvatars } from "$lib/agentAvatars";
 	import { updateAvatar } from "$lib/backend";
 	import { _ } from "$lib/i18n";
-	import { applyPlayerUpdate, currentUser } from "$lib/store";
+	import { getAuthSession } from "$lib/auth.svelte";
+
+	const session = getAuthSession();
 
 	let {
 		open = $bindable(false),
@@ -39,11 +41,11 @@
 	}
 
 	async function handleSave() {
-		if (saving || !selectedId || selectedId === selected || !$currentUser) return;
+		if (saving || !selectedId || selectedId === selected || !session.user) return;
 		saving = true;
 		status = "";
 		try {
-			applyPlayerUpdate(await updateAvatar($currentUser.uid, selectedId));
+			session.applyPlayerUpdate(await updateAvatar(session.user.uid, selectedId));
 			close();
 		} catch (error: any) {
 			status = error.message;

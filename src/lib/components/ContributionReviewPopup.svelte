@@ -11,8 +11,10 @@
 		submitReviewComment,
 		type ContributionDetail,
 	} from "$lib/contributions";
-	import { currentUser, isAdmin, isModerator } from "$lib/store";
+	import { getAuthSession } from "$lib/auth.svelte";
 	import { _ } from "$lib/i18n";
+
+	const session = getAuthSession();
 
 	let {
 		open = $bindable(false),
@@ -42,7 +44,7 @@
 	// Best-effort "is this my review" match for the pre-fill/edit UX below — ReviewDto only
 	// carries a display name, not a stable reviewer id, but this is cosmetic: the server always
 	// resolves the real reviewer from the caller's own JWT on submit regardless of what's shown.
-	const myReview = $derived(contribution?.reviews.find((r) => r.reviewerName === $currentUser?.name) ?? null);
+	const myReview = $derived(contribution?.reviews.find((r) => r.reviewerName === session.user?.name) ?? null);
 
 	$effect(() => {
 		if (!open || !contributionId) return;
@@ -56,7 +58,7 @@
 		getContribution(id).then((detail) => {
 			if (id !== contributionId) return; // stale response from a since-changed selection
 			contribution = detail;
-			const mine = detail?.reviews.find((r) => r.reviewerName === $currentUser?.name) ?? null;
+			const mine = detail?.reviews.find((r) => r.reviewerName === session.user?.name) ?? null;
 			vote = mine?.vote ?? "positive";
 			comment = mine?.comment ?? "";
 			showReviewForm = !!mine;
@@ -89,7 +91,7 @@
 		}
 	}
 
-	let canModerate = $derived($isAdmin || $isModerator);
+	let canModerate = $derived(session.isAdmin || session.isModerator);
 
 	let voteLabels: Record<ReviewVote, string> = $derived({
 		positive: $_("contributionReviewPopup.vote.positive"),
@@ -252,7 +254,7 @@
 											value={discussionDrafts[r.id] ?? ""}
 											oninput={(e) => (discussionDrafts[r.id] = e.currentTarget.value)}
 										/>
-										{#if $currentUser}
+										{#if session.user}
 											<button type="button" class="btn-common" onclick={() => submitDiscussionComment(r.id)}
 												>{$_("contributionReviewPopup.send")}</button
 											>
@@ -267,7 +269,7 @@
 
 			<div class="divider"></div>
 
-			{#if $currentUser}
+			{#if session.user}
 				{#if showReviewForm}
 					<div class="add-review">
 						<div class="vote-choice">

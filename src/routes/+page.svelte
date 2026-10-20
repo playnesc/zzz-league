@@ -6,14 +6,17 @@
 	import Leaderboard from "$lib/components/Leaderboard.svelte";
 	import SidePanel from "$lib/components/SidePanel.svelte";
 	import TournamentCard from "$lib/components/TournamentCard.svelte";
-	import { isModerator, seasonTimerEndsAt, tournaments, refreshSeasonTimer } from "$lib/store";
+	import { seasonTimerEndsAt, tournaments, refreshSeasonTimer } from "$lib/store";
+	import { getAuthSession } from "$lib/auth.svelte";
 	import { capDefaultHeight } from "$lib/actions/capDefaultHeight";
 	import { TOURNAMENT_STATE } from "$lib/tournamentState";
+
+	const session = getAuthSession();
 
 	let filteredTournaments = $derived(
 		$tournaments
 			.filter((t) => {
-				if (t.visible === false && !$isModerator) return false;
+				if (t.visible === false && !session.isModerator) return false;
 				if (t.state !== TOURNAMENT_STATE.COMPLETE) return true;
 				const expiration = 1 * 24 * 60 * 60 * 1000;
 				return Date.now() - t.tournamentEndDate < expiration;

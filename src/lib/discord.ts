@@ -1,6 +1,6 @@
 import { resolve } from "$app/paths"
 import { auth, linkDiscord, loginWithDiscord } from "./firebase"
-import { applyPlayerUpdate } from "./store"
+import type { Player } from "./types"
 
 const DISCORD_CLIENT_ID = '1501228042926690486'
 
@@ -19,7 +19,9 @@ export function openDiscordOAuth(mode: DiscordOAuthMode) {
 	window.location.href = `https://discord.com/oauth2/authorize?${params}`
 }
 
-export async function handleDiscordCallback() {
+// Returns the updated Player when linking (for the caller to apply to its AuthSession); a login
+// needs nothing applied — the root layout's onAuthStateChanged picks the new session up.
+export async function handleDiscordCallback(): Promise<Player | undefined> {
 	const params = new URLSearchParams(window.location.search);
 	const code = params.get('code');
 	if (!code) return;
@@ -31,6 +33,6 @@ export async function handleDiscordCallback() {
 		await loginWithDiscord(code, redirectUri);
 	} else {
 		await auth.authStateReady();
-		applyPlayerUpdate(await linkDiscord(code, redirectUri));
+		return await linkDiscord(code, redirectUri);
 	}
 }

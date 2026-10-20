@@ -7,9 +7,11 @@
 	import SidePanel from "$lib/components/SidePanel.svelte";
 	import { refreshAgentCosts } from "$lib/costData";
 	import { refreshContributions } from "$lib/contributions";
-	import { isAdmin } from "$lib/store";
+	import { getAuthSession } from "$lib/auth.svelte";
 	import { refreshEngineCosts } from "$lib/weaponData";
 	import { onMount } from "svelte";
+
+	const session = getAuthSession();
 
 	let activeTab = $state<"agents" | "weapons">("agents");
 	let importing = $state(false);
@@ -72,7 +74,7 @@
 					<a class="btn-common" href="{API_BASE_URL}/api/community-costs/agents/export.csv" download>
 						{$_("pageCosts.exportCsv")}
 					</a>
-					{#if $isAdmin}
+					{#if session.isAdmin}
 						<button class="btn-common" disabled={importing} onclick={() => agentFileInput?.click()}>
 							{importing ? $_("pageCosts.importing") : $_("pageCosts.importCsv")}
 						</button>
@@ -88,7 +90,7 @@
 					<a class="btn-common" href="{API_BASE_URL}/api/community-costs/engines/export.csv" download>
 						{$_("pageCosts.exportCsv")}
 					</a>
-					{#if $isAdmin}
+					{#if session.isAdmin}
 						<button class="btn-common" disabled={importing} onclick={() => engineFileInput?.click()}>
 							{importing ? $_("pageCosts.importing") : $_("pageCosts.importCsv")}
 						</button>

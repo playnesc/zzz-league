@@ -5,8 +5,10 @@
 	import SidePanel from "$lib/components/SidePanel.svelte";
 	import { getAgentAvatar } from "$lib/agentAvatars";
 	import avatarPlaceholder from "$lib/assets/avatar-placeholder.webp";
-	import { authReady, isAdmin } from "$lib/store";
+	import { getAuthSession } from "$lib/auth.svelte";
 	import type { PlayerListItem, PlayerRole, StaffMember } from "$lib/types";
+
+	const session = getAuthSession();
 
 	let staff = $state<StaffMember[]>([]);
 	let players = $state<PlayerListItem[]>([]);
@@ -31,10 +33,10 @@
 		}
 	});
 
-	// Waits for $isAdmin (the role arrives after Firebase Auth restores the session).
+	// Waits for session.isAdmin (the role arrives after Firebase Auth restores the session).
 	let loaded = false;
 	$effect(() => {
-		if ($isAdmin && !loaded) {
+		if (session.isAdmin && !loaded) {
 			loaded = true;
 			Promise.all([listStaff(), listPlayers()])
 				.then(([loadedStaff, loadedPlayers]) => {
@@ -76,9 +78,9 @@
 	<SidePanel></SidePanel>
 
 	<div class="card main-content">
-		{#if !$authReady}
+		{#if !session.ready}
 			<p class="notice">{$_("common.loading")}</p>
-		{:else if $isAdmin}
+		{:else if session.isAdmin}
 			<h2 class="page-title">{$_("pageAdmin.title")}</h2>
 
 			<section>
