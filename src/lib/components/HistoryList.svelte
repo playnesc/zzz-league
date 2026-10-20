@@ -93,6 +93,9 @@
 			return;
 		try {
 			await deleteHistoryEntry(id);
+			// Drop it from whichever cached page holds it — the keyset cursors stay valid since
+			// they're (timestamp, id) boundaries, not references to a still-existing row.
+			pageCache = pageCache.map((page) => page.filter((e) => e.id !== id));
 		} catch (error) {
 			alert(error);
 		}

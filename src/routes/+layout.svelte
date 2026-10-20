@@ -36,18 +36,21 @@
 	});
 
 	onMount(() => {
+		// The tournament list depends on the caller (hidden tournaments are only served to
+		// moderators/admins), so it's (re)fetched on every auth state change — including the
+		// initial one Firebase fires on load.
 		const unsubAuth = onAuthStateChanged(auth, async (user) => {
 			if (user) {
 				await refreshCurrentUser(user.uid);
+				refreshTournaments();
 				await connectIfAuthenticated();
 			} else {
 				$currentUser = null;
 				$role = "player";
+				refreshTournaments();
 				await disconnect();
 			}
 		});
-
-		refreshTournaments();
 
 		// Every client is auto-joined to the hub's list group (see TournamentHub), so this covers
 		// the home page / tournament archive lists without a per-tournament subscription.

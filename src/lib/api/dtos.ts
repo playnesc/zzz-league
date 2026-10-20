@@ -51,6 +51,14 @@ export interface PlayerListItemDto {
 	avatar: string | null;
 }
 
+// GET /api/players/staff — admin page's Roles section.
+export interface StaffMemberDto {
+	uid: string;
+	name: string;
+	avatar: string | null;
+	role: PlayerRole;
+}
+
 export interface TournamentDto {
 	id: string;
 	name: string;

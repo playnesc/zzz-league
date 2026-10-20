@@ -82,6 +82,24 @@
 		"title": "Create Tournament",
 		"noPermission": "You don't have permission to view this page."
 	},
+	"pageAdmin": {
+		"title": "Administration",
+		"noPermission": "You don't have permission to view this page.",
+		"rolesTitle": "Roles",
+		"nameColumn": "Player",
+		"roleColumn": "Role",
+		"actionsColumn": "Actions",
+		"roleAdmin": "Admin",
+		"roleModerator": "Moderator",
+		"empty": "No moderators or admins yet.",
+		"promoteLabel": "Promote to moderator",
+		"searchPlayerPlaceholder": "Search player...",
+		"promoteButton": "Promote",
+		"demoteButton": "Demote",
+		"promoteConfirm": "Promote {name} to moderator?",
+		"demoteConfirm": "Remove the moderator role from {name}?",
+		"selectPlayer": "Select a player"
+	},
 	"pageTournaments": {
 		"title": "Tournament Archive",
 		"noTournaments": "No tournaments yet"
@@ -173,7 +191,7 @@
 		"myTeams": "My Teams",
 		"myHistory": "My History",
 		"logout": "Log Out",
-		"leagueCodeTitle": "🏆 League Code",
+		"leagueCodeTitle": "🏆 League Codex",
 		"rules": {
 			"ranks": "<b>Ranks:</b> <span class=\"tier-badge t-newbie\">NEWBIE</span> <b>1000+</b>, <span class=\"tier-badge t-mid\">MID</span> <b>1200+</b>, <span class=\"tier-badge t-high\">HIGH</span> <b>1400+</b>.",
 			"qualification": "<b>Qualification:</b> To enter <span class=\"tier-badge t-mid\">MID TIER</span> you need <b>1200</b> ELO. For <span class=\"tier-badge t-high\">HIGH TIER</span> it's enough to reach <b>1400</b> ELO.",
@@ -337,6 +355,7 @@
 	"adminPanel": {
 		"title": "Control Panel",
 		"createTournament": "Create Tournament",
+		"adminPageButton": "Admin Page",
 		"applyResults": "Apply Results",
 		"setTimerTooltip": "Set Timer",
 		"timerButton": "Timer",

@@ -57,6 +57,14 @@ export interface PlayerListItem {
 	avatar?: string;
 }
 
+// A moderator or admin, as listed on the admin page's Roles section.
+export interface StaffMember {
+	uid: string;
+	name: string;
+	avatar?: string;
+	role: PlayerRole;
+}
+
 // A lean snapshot kept in season archives (ArchivedPlayerSnapshotDto) — not a full Player, so
 // components rendering archived data (Leaderboard) must tolerate the missing fields.
 export interface ArchivedPlayerSnapshot {

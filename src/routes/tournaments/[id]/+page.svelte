@@ -37,7 +37,7 @@
 		onRegistrationChanged,
 		onTournamentChanged,
 	} from "$lib/signalr";
-	import { currentUser, isAdmin } from "$lib/store";
+	import { currentUser, isAdmin, isModerator } from "$lib/store";
 	import type {
 		PlayerListItem,
 		RegisteredPlayer,
@@ -198,7 +198,7 @@
 		}),
 	);
 
-	let canView = $derived(tournament?.visible !== false || $isAdmin);
+	let canView = $derived(tournament?.visible !== false || $isModerator);
 
 	let currentUserTier = $derived($currentUser ? playerTierValue($currentUser) : 0);
 	let tierEligible = $derived(

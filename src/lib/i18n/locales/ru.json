@@ -82,6 +82,24 @@
 		"title": "Создать турнир",
 		"noPermission": "Недостаточно прав для просмотра этой страницы."
 	},
+	"pageAdmin": {
+		"title": "Администрирование",
+		"noPermission": "Недостаточно прав для просмотра этой страницы.",
+		"rolesTitle": "Роли",
+		"nameColumn": "Игрок",
+		"roleColumn": "Роль",
+		"actionsColumn": "Действия",
+		"roleAdmin": "Админ",
+		"roleModerator": "Модератор",
+		"empty": "Модераторов и админов пока нет.",
+		"promoteLabel": "Назначить модератором",
+		"searchPlayerPlaceholder": "Поиск игрока...",
+		"promoteButton": "Назначить",
+		"demoteButton": "Снять",
+		"promoteConfirm": "Назначить {name} модератором?",
+		"demoteConfirm": "Снять с {name} роль модератора?",
+		"selectPlayer": "Выберите игрока"
+	},
 	"pageTournaments": {
 		"title": "Архив турниров",
 		"noTournaments": "Турниров пока нет"
@@ -337,6 +355,7 @@
 	"adminPanel": {
 		"title": "Панель управления",
 		"createTournament": "Создать турнир",
+		"adminPageButton": "Админка",
 		"applyResults": "Применить итоги",
 		"setTimerTooltip": "Установить таймер",
 		"timerButton": "Таймер",

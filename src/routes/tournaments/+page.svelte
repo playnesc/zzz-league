@@ -3,13 +3,13 @@
 	import SidePanel from "$lib/components/SidePanel.svelte";
 	import TournamentCard from "$lib/components/TournamentCard.svelte";
 	import { _ } from "$lib/i18n";
-	import { isAdmin, tournaments } from "$lib/store";
+	import { isModerator, tournaments } from "$lib/store";
 
 	let now = $state(Date.now());
 
 	let sortedTournaments = $derived(
 		[...$tournaments]
-			.filter((t) => t.visible !== false || $isAdmin)
+			.filter((t) => t.visible !== false || $isModerator)
 			.sort((a, b) => b.tournamentStartDate - a.tournamentStartDate),
 	);
 

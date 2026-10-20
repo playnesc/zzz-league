@@ -1,6 +1,6 @@
 import { apiDelete, apiGet, apiPost, apiPut } from '../api';
-import type { Player, PlayerListItem } from '../types';
-import { epoch, type PlayerDto, type PlayerListItemDto } from './dtos';
+import type { Player, PlayerListItem, PlayerRole, StaffMember } from '../types';
+import { epoch, type PlayerDto, type PlayerListItemDto, type StaffMemberDto } from './dtos';
 
 export function toPlayer(dto: PlayerDto): Player {
 	return {
@@ -57,4 +57,17 @@ export async function updateProfile(uid: string, name: string): Promise<Player> 
 
 export async function updateAvatar(uid: string, avatar: string): Promise<Player> {
 	return toPlayer(await apiPut<PlayerDto>(`/api/players/${uid}/avatar`, { avatar }));
+}
+
+// Admin-only: every moderator and admin, highest role first.
+export async function listStaff(): Promise<StaffMember[]> {
+	return (await apiGet<StaffMemberDto[]>('/api/players/staff')).map((dto) => ({
+		...dto,
+		avatar: dto.avatar ?? undefined,
+	}));
+}
+
+// Admin-only: the API accepts only player <-> moderator changes (admins can't be changed).
+export async function setPlayerRole(uid: string, role: PlayerRole): Promise<Player> {
+	return toPlayer(await apiPut<PlayerDto>(`/api/players/${uid}/role`, { role }));
 }

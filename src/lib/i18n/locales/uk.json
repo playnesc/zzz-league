@@ -82,6 +82,24 @@
 		"title": "Створити турнір",
 		"noPermission": "Недостатньо прав для перегляду цієї сторінки."
 	},
+	"pageAdmin": {
+		"title": "Адміністрування",
+		"noPermission": "Недостатньо прав для перегляду цієї сторінки.",
+		"rolesTitle": "Ролі",
+		"nameColumn": "Гравець",
+		"roleColumn": "Роль",
+		"actionsColumn": "Дії",
+		"roleAdmin": "Адмін",
+		"roleModerator": "Модератор",
+		"empty": "Модераторів і адмінів поки немає.",
+		"promoteLabel": "Призначити модератором",
+		"searchPlayerPlaceholder": "Пошук гравця...",
+		"promoteButton": "Призначити",
+		"demoteButton": "Зняти",
+		"promoteConfirm": "Призначити {name} модератором?",
+		"demoteConfirm": "Зняти з {name} роль модератора?",
+		"selectPlayer": "Оберіть гравця"
+	},
 	"pageTournaments": {
 		"title": "Архів турнірів",
 		"noTournaments": "Турнірів поки немає"
@@ -337,6 +355,7 @@
 	"adminPanel": {
 		"title": "Панель керування",
 		"createTournament": "Створити турнір",
+		"adminPageButton": "Адмінка",
 		"applyResults": "Застосувати підсумки",
 		"setTimerTooltip": "Встановити таймер",
 		"timerButton": "Таймер",
