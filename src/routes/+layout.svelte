@@ -10,6 +10,7 @@
 		role,
 		authReady,
 		viewingImage,
+		viewingNexusResult,
 		refreshCurrentUser,
 		refreshTournaments,
 		refreshOneTournament,
@@ -24,6 +25,7 @@
 	import { auth } from "$lib/firebase";
 	import { connectIfAuthenticated, disconnect, onTournamentChanged } from "$lib/signalr";
 	import ImageViewerPopup from "$lib/components/ImageViewerPopup.svelte";
+	import NexusViewerPopup from "$lib/components/NexusViewerPopup.svelte";
 	import SiteHeader from "$lib/components/Header.svelte";
 	import DialogHost from "$lib/components/DialogHost.svelte";
 	import favicon from "$lib/assets/favicon.png";
@@ -99,4 +101,5 @@
 {#if $settingsOpen}<SettingsPopup />{/if}
 {#if profileOpen}<PlayerProfilePopup player={$profileUser} />{/if}
 {#if imageViewerOpen}<ImageViewerPopup src={$viewingImage} />{/if}
+{#if $viewingNexusResult}<NexusViewerPopup resultId={$viewingNexusResult} />{/if}
 <DialogHost />

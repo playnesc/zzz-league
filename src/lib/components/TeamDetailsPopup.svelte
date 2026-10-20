@@ -124,6 +124,11 @@
 		gap: 16px;
 	}
 
+	/* The card centers its children; stretch the close row so the button sits top-right. */
+	.close-row {
+		align-self: stretch;
+	}
+
 	.team-logo {
 		width: 64px;
 		height: 64px;

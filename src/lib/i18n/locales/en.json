@@ -317,6 +317,7 @@
 		"nexusTie": "This Nexus result is a tie — ask a moderator to set the result",
 		"nexusResultTitle": "Nexus match result",
 		"openOnNexus": "Open on Nexus ↗",
+		"nexusExpand": "Open the Nexus result larger",
 		"nexusNewResultLabel": "Result from the link",
 		"nexusParseFailed": "Couldn't read this Nexus result — Nexus may have been updated. Please report this to the admins.",
 		"nexusUnavailable": "Nexus is unavailable right now, try again later."

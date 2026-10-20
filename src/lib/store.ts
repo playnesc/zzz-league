@@ -27,6 +27,8 @@ export const loginOpen = writable(false);
 export const settingsOpen = writable(false);
 export const profileUser = writable<PlayerListItem | null>(null);
 export const viewingImage = writable<string>("");
+// Nexus result id shown large in NexusViewerPopup ("" = closed).
+export const viewingNexusResult = writable<string>("");
 
 // ---- REST-backed data loading, replacing the old onValue-fed stores ----
 

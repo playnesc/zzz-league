@@ -317,6 +317,7 @@
 		"nexusTie": "Результат Nexus — ничья, попросите модератора выставить результат",
 		"nexusResultTitle": "Результат матча на Nexus",
 		"openOnNexus": "Открыть на Nexus ↗",
+		"nexusExpand": "Открыть результат Nexus крупнее",
 		"nexusNewResultLabel": "Результат по ссылке",
 		"nexusParseFailed": "Не удалось прочитать результат Nexus — возможно, Nexus обновился. Пожалуйста, сообщите об этом администраторам.",
 		"nexusUnavailable": "Nexus сейчас недоступен, попробуйте позже."

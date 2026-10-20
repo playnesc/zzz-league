@@ -1,7 +1,7 @@
 import { browser } from "$app/environment";
 import DOMPurify from "dompurify";
 import { marked } from "marked";
-import { loginOpen, profileUser, settingsOpen, viewingImage } from "./store";
+import { loginOpen, profileUser, settingsOpen, viewingImage, viewingNexusResult } from "./store";
 import type { PlayerListItem } from "./types";
 
 marked.setOptions({ breaks: true });
@@ -83,6 +83,14 @@ export function openImagePopup(src: string) {
 
 export function closeImagePopup() {
 	viewingImage.set("");
+}
+
+export function openNexusPopup(resultId: string) {
+	viewingNexusResult.set(resultId);
+}
+
+export function closeNexusPopup() {
+	viewingNexusResult.set("");
 }
 
 // Tier values as stored on tournaments (minTier/maxTier). Tier names are league proper names

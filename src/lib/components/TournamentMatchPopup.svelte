@@ -61,8 +61,17 @@
 
 	// Solo matches take their result from a nexus-shiyu.com result link — players must paste one,
 	// moderators may (it prefills their editable fields). Team matches keep typed result + screenshot.
+	//
+	// NEXUS_PARSING_ENABLED = false while Nexus has no stable API to read results from: solo
+	// results are typed (like team matches) and the pasted link is only proof, shown as an embed
+	// instead of a screenshot. Flip together with the API's Nexus:ParseResults setting.
+	const NEXUS_PARSING_ENABLED = false;
 	const NEXUS_LINK_PATTERN =
-		/^https?:\/\/(www\.)?nexus-shiyu\.com\/results\/[a-z0-9]{10,40}(\/obs)?\/?([?#].*)?$/i;
+		/^https?:\/\/(www\.)?nexus-shiyu\.com\/results\/([a-z0-9]{10,40})(\/obs)?\/?([?#].*)?$/i;
+
+	function nexusIdFromUrl(url: string) {
+		return NEXUS_LINK_PATTERN.exec(url.trim())?.[2]?.toLowerCase() ?? null;
+	}
 
 	type NexusDraft = {
 		url: string;
@@ -113,6 +122,7 @@
 			draft.error = $_("tournamentMatchPopup.nexusLinkInvalid");
 			return;
 		}
+		if (!NEXUS_PARSING_ENABLED) return;
 
 		const requestId = ++previewRequestIds[target];
 		draft.loading = true;
@@ -288,12 +298,16 @@
 	let isApproving = $state(false);
 	async function handleApproveResult() {
 		if (isApproving) return;
-		if (!isTeamMatch) {
+		if (!isTeamMatch && NEXUS_PARSING_ENABLED) {
 			await handleApproveNexusResult();
 			return;
 		}
 		if (!isValidResult(matchResultP1) || !isValidResult(matchResultP2)) {
 			notify(isDeadlyAssault ? $_("tournamentMatchPopup.enterScoreAboveZero") : $_("tournamentMatchPopup.enterTimeAboveZero"));
+			return;
+		}
+		if (!isTeamMatch) {
+			await handleApproveTypedSoloResult();
 			return;
 		}
 		const resultScreenshot = inputScreenshot?.[0];
@@ -349,6 +363,28 @@
 		try {
 			isApproving = true;
 			await approveResult(tournament.id, match.id, null, null, null, url || null, url ? ownNexus.p1Side : null);
+		} catch (error) {
+			notify(nexusErrorMessage(error));
+		} finally {
+			isApproving = false;
+		}
+	}
+
+	// Solo while Nexus parsing is off: the typed result, with the Nexus link as proof (instead of
+	// a screenshot). With no new link the one already stored is kept.
+	async function handleApproveTypedSoloResult() {
+		const url = ownNexus.url.trim();
+		if (url && ownNexus.error) {
+			notify(ownNexus.error);
+			return;
+		}
+		if (!url && !match.nexusResultId && !match.resultScreenshot) {
+			notify($_("tournamentMatchPopup.nexusLinkRequired"));
+			return;
+		}
+		try {
+			isApproving = true;
+			await approveResult(tournament.id, match.id, matchResultP1, matchResultP2, null, url || null, null);
 		} catch (error) {
 			notify(nexusErrorMessage(error));
 		} finally {
@@ -603,6 +639,8 @@
 				preview.rightName,
 			)}
 			<NexusResultEmbed resultId={preview.nexusResultId} />
+		{:else if !NEXUS_PARSING_ENABLED && !draft.error && nexusIdFromUrl(draft.url)}
+			<NexusResultEmbed resultId={nexusIdFromUrl(draft.url)!} />
 		{:else if target === "own"}
 			{@render storedResult()}
 		{/if}
@@ -618,7 +656,7 @@
 			{#if canApproveOwnResult}
 				<div class="divider"></div>
 
-				{#if !isTeamMatch}
+				{#if !isTeamMatch && NEXUS_PARSING_ENABLED}
 					{@render nexusInput("own")}
 				{:else}
 					<div class="result-input-block">
@@ -641,29 +679,33 @@
 						</div>
 					</div>
 
-					<div class="screenshot-block">
-						<div class="screenshot-btn-row">
-							<input
-								bind:this={ownFileInput}
-								class="hidden-file-input"
-								type="file"
-								accept="image/*"
-								bind:files={inputScreenshot}
-							/>
-							<button
-								type="button"
-								class="btn-common btn-sm-action"
-								onclick={() => ownFileInput?.click()}>{$_("tournamentMatchPopup.chooseFile")}</button
-							>
-							<button
-								type="button"
-								class="btn-common btn-sm-action"
-								onclick={() => handlePasteScreenshot("own")}
-								>{$_("tournamentMatchPopup.pasteCtrlV")}</button
-							>
+					{#if !isTeamMatch}
+						{@render nexusInput("own")}
+					{:else}
+						<div class="screenshot-block">
+							<div class="screenshot-btn-row">
+								<input
+									bind:this={ownFileInput}
+									class="hidden-file-input"
+									type="file"
+									accept="image/*"
+									bind:files={inputScreenshot}
+								/>
+								<button
+									type="button"
+									class="btn-common btn-sm-action"
+									onclick={() => ownFileInput?.click()}>{$_("tournamentMatchPopup.chooseFile")}</button
+								>
+								<button
+									type="button"
+									class="btn-common btn-sm-action"
+									onclick={() => handlePasteScreenshot("own")}
+									>{$_("tournamentMatchPopup.pasteCtrlV")}</button
+								>
+							</div>
+							{@render screenshotThumb(inputScreenshotPreview.url, match.resultScreenshot)}
 						</div>
-						{@render screenshotThumb(inputScreenshotPreview.url, match.resultScreenshot)}
-					</div>
+					{/if}
 				{/if}
 
 				<div class="approval-row">
@@ -707,13 +749,17 @@
 				<div class="divider admin-divider"></div>
 				<div class="admin-label">{$_("tournamentMatchPopup.adminChangeResultLabel")}</div>
 
-				{#if !isTeamMatch}
+				{#if !isTeamMatch && NEXUS_PARSING_ENABLED}
 					{@render nexusInput("admin")}
 				{/if}
 
 				<div class="result-fields">
 					{@render resultFields("admin-result-p1", "admin-result-p2")}
 				</div>
+
+				{#if !isTeamMatch && !NEXUS_PARSING_ENABLED}
+					{@render nexusInput("admin")}
+				{/if}
 
 				{#if isTeamMatch}
 					<div class="screenshot-block">
