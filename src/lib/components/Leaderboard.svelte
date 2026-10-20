@@ -119,10 +119,10 @@
 	<thead>
 		<tr>
 			<th>{$_("leaderboard.rankColumn")}</th>
-			<th>{$_("leaderboard.tierColumn")}</th>
+			<th class="tier-col">{$_("leaderboard.tierColumn")}</th>
 			<th>{$_("leaderboard.playerColumn")}</th>
-			<th class="align-right">ELO</th>
-			<th class="align-right">LVL</th>
+			<th class="align-right">{$_("leaderboard.eloColumn")}</th>
+			<th class="align-right">{$_("leaderboard.lvlColumn")}</th>
 			{#if $isAdmin && !hideOptions}<th class="align-right">{$_("leaderboard.optionsColumn")}</th>{/if}
 		</tr>
 	</thead>
@@ -148,7 +148,7 @@
 			>
 				<!-- position on the whole ladder, so searching doesn't renumber players -->
 				<td>{ladderPos + 1}</td>
-				<td><span class="tier-badge {tier.cls}">{tier.name}</span></td>
+				<td class="tier-col"><span class="tier-badge {tier.cls}">{tier.name}</span></td>
 				<td class="player-name">
 					<div class="player-cell">
 						<div
@@ -284,5 +284,12 @@
 
 	td.align-right b {
 		font-variant-numeric: tabular-nums;
+	}
+
+	/* Phones: give the name and ELO the room — tier is still on the player's profile popup. */
+	@media (max-width: 640px) {
+		.tier-col {
+			display: none;
+		}
 	}
 </style>

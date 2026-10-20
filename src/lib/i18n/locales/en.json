@@ -43,6 +43,8 @@
 		"rankColumn": "#",
 		"tierColumn": "Tier",
 		"playerColumn": "Player",
+		"eloColumn": "ELO",
+		"lvlColumn": "LVL",
 		"optionsColumn": "Options",
 		"editEloAriaLabel": "Edit ELO",
 		"deletePlayerAriaLabel": "Delete player"

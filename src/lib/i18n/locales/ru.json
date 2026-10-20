@@ -43,6 +43,8 @@
 		"rankColumn": "№",
 		"tierColumn": "Тир",
 		"playerColumn": "Игрок",
+		"eloColumn": "ELO",
+		"lvlColumn": "LVL",
 		"optionsColumn": "Опции",
 		"editEloAriaLabel": "Изменить ELO",
 		"deletePlayerAriaLabel": "Удалить игрока"
