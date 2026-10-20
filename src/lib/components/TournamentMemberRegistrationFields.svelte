@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { notify } from "$lib/dialogs";
+	import { notify } from "$lib/dialogs.svelte";
 	import { useObjectUrlPreview } from "$lib/imagePreview.svelte.js";
 	import type { MemberRegistrationForm } from "$lib/tournamentRegistrationForm";
 	import { bustCache, openImagePopup, pasteImageFromClipboard } from "$lib/uiCommon";

@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { confirmDialog, notify } from "$lib/dialogs";
+	import { confirmDialog, notify } from "$lib/dialogs.svelte";
 	import { modal } from "$lib/actions/modal";
 	import { deleteTeam, listPlayers } from "$lib/backend";
 	import { _ } from "$lib/i18n";

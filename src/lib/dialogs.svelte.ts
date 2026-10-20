@@ -1,6 +1,5 @@
 // In-app replacements for window.alert / confirm / prompt. Rendered by DialogHost.svelte
 // (mounted once in the root layout), so they match the site's styling and work in every locale.
-import { writable } from "svelte/store";
 
 export type ConfirmOptions = {
 	title?: string;
@@ -24,25 +23,29 @@ export type ToastKind = "error" | "success" | "info";
 /** `message: null` renders the translated "something went wrong" fallback. */
 export type Toast = { id: number; kind: ToastKind; message: string | null };
 
-export const activeDialog = writable<DialogRequest | null>(null);
-export const toasts = writable<Toast[]>([]);
+// Module-level rather than per-request: only ever set from the browser, so the server always
+// renders it empty.
+export const dialogs = $state<{ active: DialogRequest | null; toasts: Toast[] }>({
+	active: null,
+	toasts: [],
+});
 
 export function confirmDialog(message: string, options: ConfirmOptions = {}): Promise<boolean> {
 	return new Promise((resolve) => {
-		activeDialog.set({ kind: "confirm", message, resolve, ...options });
+		dialogs.active = { kind: "confirm", message, resolve, ...options };
 	});
 }
 
 export function promptDialog(message: string, options: PromptOptions = {}): Promise<string | null> {
 	return new Promise((resolve) => {
-		activeDialog.set({ kind: "prompt", message, resolve, ...options });
+		dialogs.active = { kind: "prompt", message, resolve, ...options };
 	});
 }
 
 let nextToastId = 1;
 
 export function dismissToast(id: number) {
-	toasts.update((list) => list.filter((t) => t.id !== id));
+	dialogs.toasts = dialogs.toasts.filter((t) => t.id !== id);
 }
 
 /** Readable text for anything thrown or passed around as an error; null when there's nothing useful. */
@@ -59,6 +62,6 @@ export function errorMessage(error: unknown): string | null {
 export function notify(messageOrError: unknown, kind: ToastKind = "error") {
 	const message = errorMessage(messageOrError);
 	const id = nextToastId++;
-	toasts.update((list) => [...list.slice(-3), { id, kind, message }]);
+	dialogs.toasts = [...dialogs.toasts.slice(-3), { id, kind, message }];
 	setTimeout(() => dismissToast(id), kind === "error" ? 8000 : 5000);
 }

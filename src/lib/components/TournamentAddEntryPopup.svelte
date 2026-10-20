@@ -6,7 +6,7 @@
 		listPlayers,
 		listTeamsPage,
 	} from "$lib/backend";
-	import { errorMessage } from "$lib/dialogs";
+	import { errorMessage } from "$lib/dialogs.svelte";
 	import { _ } from "$lib/i18n";
 
 	// Admin "add a player / add a team to this tournament" picker. Both kinds fetch every

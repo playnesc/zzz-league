@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { confirmDialog, notify } from "$lib/dialogs";
+	import { confirmDialog, notify } from "$lib/dialogs.svelte";
 	import { listPlayers, listStaff, setPlayerRole } from "$lib/backend";
 	import { _ } from "$lib/i18n";
 	import SidePanel from "$lib/components/SidePanel.svelte";

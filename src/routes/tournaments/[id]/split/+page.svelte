@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { confirmDialog, notify } from "$lib/dialogs";
+	import { confirmDialog, notify } from "$lib/dialogs.svelte";
 	import { goto } from "$app/navigation";
 	import { resolve } from "$app/paths";
 	import { page } from "$app/state";

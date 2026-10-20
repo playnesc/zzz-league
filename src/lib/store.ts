@@ -1,5 +1,5 @@
 import { writable } from 'svelte/store'
-import type { PlayerListItem, Tournament } from './types';
+import type { Tournament } from './types';
 import { getSeasonTimer, getTournament, listTournaments } from './backend';
 
 export const tournaments = writable<Tournament[]>([]);
@@ -11,13 +11,6 @@ export const seasonTimerEndsAt = writable<number | null>(null);
 export async function refreshSeasonTimer(): Promise<void> {
 	seasonTimerEndsAt.set(await getSeasonTimer());
 }
-
-export const loginOpen = writable(false);
-export const settingsOpen = writable(false);
-export const profileUser = writable<PlayerListItem | null>(null);
-export const viewingImage = writable<string>("");
-// Nexus result id shown large in NexusViewerPopup ("" = closed).
-export const viewingNexusResult = writable<string>("");
 
 // ---- REST-backed data loading, replacing the old onValue-fed stores ----
 

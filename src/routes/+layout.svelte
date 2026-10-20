@@ -2,15 +2,8 @@
 	import "../app.css";
 	import { locale, migrateLegacyLocale } from "$lib/i18n";
 
-	import {
-		profileUser,
-		settingsOpen,
-		loginOpen,
-		viewingImage,
-		viewingNexusResult,
-		refreshTournaments,
-		refreshOneTournament,
-	} from "$lib/store";
+	import { refreshTournaments, refreshOneTournament } from "$lib/store";
+	import { popups } from "$lib/popups.svelte";
 	import { AuthSession, setAuthSession } from "$lib/auth.svelte";
 
 	import LoginPopup from "$lib/components/LoginPopup.svelte";
@@ -38,14 +31,6 @@
 	// One session per render (per request on the server), shared with every child via context.
 	// svelte-ignore state_referenced_locally
 	const session = setAuthSession(new AuthSession(data.session));
-
-	let profileOpen = $state(false);
-	let imageViewerOpen = $state(false);
-
-	$effect(() => {
-		profileOpen = $profileUser !== null;
-		imageViewerOpen = !!$viewingImage;
-	});
 
 	onMount(() => {
 		migrateLegacyLocale();
@@ -90,9 +75,9 @@
 
 {@render children()}
 
-{#if $loginOpen}<LoginPopup />{/if}
-{#if $settingsOpen}<SettingsPopup />{/if}
-{#if profileOpen}<PlayerProfilePopup player={$profileUser} />{/if}
-{#if imageViewerOpen}<ImageViewerPopup src={$viewingImage} />{/if}
-{#if $viewingNexusResult}<NexusViewerPopup resultId={$viewingNexusResult} />{/if}
+{#if popups.loginOpen}<LoginPopup />{/if}
+{#if popups.settingsOpen}<SettingsPopup />{/if}
+{#if popups.profileUser}<PlayerProfilePopup player={popups.profileUser} />{/if}
+{#if popups.viewingImage}<ImageViewerPopup src={popups.viewingImage} />{/if}
+{#if popups.viewingNexusResult}<NexusViewerPopup resultId={popups.viewingNexusResult} />{/if}
 <DialogHost />

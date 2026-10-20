@@ -1,18 +1,18 @@
 <script lang="ts">
 	import { modal } from "$lib/actions/modal";
-	import { activeDialog, toasts, dismissToast } from "$lib/dialogs";
+	import { dialogs, dismissToast } from "$lib/dialogs.svelte";
 	import { _ } from "$lib/i18n";
 
 	let promptValue = $state("");
 
 	$effect(() => {
-		if ($activeDialog?.kind === "prompt") promptValue = $activeDialog.defaultValue ?? "";
+		if (dialogs.active?.kind === "prompt") promptValue = dialogs.active.defaultValue ?? "";
 	});
 
 	function finish(result: boolean) {
-		const dialog = $activeDialog;
+		const dialog = dialogs.active;
 		if (!dialog) return;
-		activeDialog.set(null);
+		dialogs.active = null;
 		if (dialog.kind === "confirm") dialog.resolve(result);
 		else dialog.resolve(result ? promptValue : null);
 	}
@@ -23,8 +23,8 @@
 	}
 </script>
 
-{#if $activeDialog}
-	{@const dialog = $activeDialog}
+{#if dialogs.active}
+	{@const dialog = dialogs.active}
 	<!-- a confirm that names its action ("Delete", "Apply Results") uses that as its title too -->
 	{@const title = dialog.title ?? dialog.confirmLabel}
 	<div class="popup dialog-layer">
@@ -60,7 +60,7 @@
 {/if}
 
 <div class="toast-region" aria-live="polite">
-	{#each $toasts as toast (toast.id)}
+	{#each dialogs.toasts as toast (toast.id)}
 		<div class="toast toast-{toast.kind}" role={toast.kind === "error" ? "alert" : "status"}>
 			<p>{toast.message ?? $_("common.unexpectedError")}</p>
 			<button class="icon-btn" onclick={() => dismissToast(toast.id)} aria-label={$_("common.close")}>

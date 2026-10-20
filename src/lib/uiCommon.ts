@@ -1,7 +1,7 @@
 import { browser } from "$app/environment";
 import DOMPurify from "dompurify";
 import { marked } from "marked";
-import { loginOpen, profileUser, settingsOpen, viewingImage, viewingNexusResult } from "./store";
+import { popups } from "./popups.svelte";
 import type { PlayerListItem } from "./types";
 
 marked.setOptions({ breaks: true });
@@ -53,44 +53,44 @@ export function imageFileFromPasteEvent(e: ClipboardEvent): File | null {
 }
 
 export function openProfilePopup(player: PlayerListItem) {
-	profileUser.set(player);
+	popups.profileUser = player;
 }
 
 export function closeProfilePopup() {
-	profileUser.set(null);
+	popups.profileUser = null;
 }
 
 export function openLoginPopup() {
-	loginOpen.set(true);
+	popups.loginOpen = true;
 }
 
 export function closeLoginPopup() {
-	loginOpen.set(false);
+	popups.loginOpen = false;
 }
 
 export function openSettingsPopup() {
-	settingsOpen.set(true);
+	popups.settingsOpen = true;
 }
 
 export function closeSettingsPopup() {
-	settingsOpen.set(false);
+	popups.settingsOpen = false;
 }
 
 
 export function openImagePopup(src: string) {
-	viewingImage.set(src);
+	popups.viewingImage = src;
 }
 
 export function closeImagePopup() {
-	viewingImage.set("");
+	popups.viewingImage = "";
 }
 
 export function openNexusPopup(resultId: string) {
-	viewingNexusResult.set(resultId);
+	popups.viewingNexusResult = resultId;
 }
 
 export function closeNexusPopup() {
-	viewingNexusResult.set("");
+	popups.viewingNexusResult = "";
 }
 
 // Tier values as stored on tournaments (minTier/maxTier). Tier names are league proper names

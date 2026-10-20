@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { confirmDialog, notify } from "$lib/dialogs";
+	import { confirmDialog, notify } from "$lib/dialogs.svelte";
 	import { untrack } from "svelte";
 	import { resolve } from "$app/paths";
 	import { _, locale, formatDate as formatLocalizedDate } from "$lib/i18n";

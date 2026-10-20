@@ -7,7 +7,7 @@
 	import type { Player, PlayerListItem } from "$lib/types";
 	import { getLvl, getTier, openProfilePopup } from "$lib/uiCommon";
 	import PointsDelta from "$lib/components/PointsDelta.svelte";
-	import { confirmDialog, notify, promptDialog } from "$lib/dialogs";
+	import { confirmDialog, notify, promptDialog } from "$lib/dialogs.svelte";
 
 	const session = getAuthSession();
 

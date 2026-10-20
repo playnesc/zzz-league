@@ -14,7 +14,7 @@
 	import { resolve } from "$app/paths";
 	import { onMount } from "svelte";
 	import { _ } from "$lib/i18n";
-	import { confirmDialog, notify, promptDialog } from "$lib/dialogs";
+	import { confirmDialog, notify, promptDialog } from "$lib/dialogs.svelte";
 
 	let players = $state<PlayerListItem[]>([]);
 

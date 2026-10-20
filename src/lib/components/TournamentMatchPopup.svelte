@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { confirmDialog, notify } from "$lib/dialogs";
+	import { confirmDialog, notify } from "$lib/dialogs.svelte";
 	import { modal } from "$lib/actions/modal";
 	import type { NexusMissingDto, NexusPreviewDto } from "$lib/api/dtos";
 	import { adminSetMatchResult, approveResult, previewNexusResult, type NexusSide } from "$lib/backend";
