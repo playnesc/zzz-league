@@ -1,6 +1,6 @@
 import { apiDelete, apiGet, apiPost, apiPut } from '../api';
-import type { Player, PlayerListItem, PlayerRole, StaffMember } from '../types';
-import { epoch, type PlayerDto, type PlayerListItemDto, type StaffMemberDto } from './dtos';
+import type { LastRegistrationData, Player, PlayerListItem, PlayerRole, StaffMember } from '../types';
+import { epoch, type LastRegistrationDto, type PlayerDto, type PlayerListItemDto, type StaffMemberDto } from './dtos';
 
 export function toPlayer(dto: PlayerDto): Player {
 	return {
@@ -9,7 +9,6 @@ export function toPlayer(dto: PlayerDto): Player {
 			? epoch(dto.lastPlayedTournamentTimestamp)
 			: undefined,
 		avatar: dto.avatar ?? undefined,
-		lastRegistration: dto.lastRegistration ?? undefined,
 	};
 }
 
@@ -36,6 +35,11 @@ export async function getPlayer(uid: string): Promise<Player | null> {
 	} catch {
 		return null;
 	}
+}
+
+// The signed-in user's most recent solo registration, for the register page's prefill button.
+export async function getMyLastRegistration(): Promise<LastRegistrationData | null> {
+	return (await apiGet<LastRegistrationDto | undefined>('/api/players/me/last-registration')) ?? null;
 }
 
 export async function addPlayer(name: string): Promise<Player> {

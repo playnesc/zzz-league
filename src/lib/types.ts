@@ -7,6 +7,8 @@ import type { NexusMissingDto } from "./api/dtos";
 
 export type PlayerRole = "player" | "moderator" | "admin";
 
+// The caller's most recent solo registration details — fetched fresh by the register page
+// (getMyLastRegistration), not cached on Player, so it can't go stale within a session.
 export interface LastRegistrationData {
 	gameUid: string;
 	prizeUid: string | null;
@@ -32,14 +34,13 @@ export interface Player {
 	playedTournamentCount: number;
 	seasonalPlayedTournamentCount: number;
 	lastPlayedTournamentTimestamp?: number;
-	lastRegistration?: LastRegistrationData;
 	avatar?: string;
 	role: PlayerRole;
 }
 
 // Lean shape returned by GET /api/players (optionally filtered by uids) — everything list-context
 // views (leaderboard, pickers, tournament rosters, history rows, profile popups opened from any of
-// those) actually render. Omits discordId/role/lastRegistration, which only ever matter for the
+// those) actually render. Omits discordId/role, which only ever matter for the
 // logged-in user's own full Player (fetched separately via getPlayer/$currentUser).
 export interface PlayerListItem {
 	uid: string;

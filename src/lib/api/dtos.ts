@@ -4,7 +4,8 @@
 import type { PlayerRole, TournamentGameMode, TournamentRegistrationKind } from '../types';
 import type { Specialty } from '../costData';
 
-export interface LastRegistrationCacheDto {
+// GET /api/players/me/last-registration (204 when there's none).
+export interface LastRegistrationDto {
 	gameUid: string;
 	prizeAsMoney: boolean;
 	prizeUid: string | null;
@@ -32,7 +33,6 @@ export interface PlayerDto {
 	avatar: string | null;
 	role: PlayerRole;
 	createdAt: string;
-	lastRegistration: LastRegistrationCacheDto | null;
 }
 
 export interface PlayerListItemDto {

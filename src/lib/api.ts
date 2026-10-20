@@ -37,7 +37,7 @@ async function apiFetch(path: string, init: RequestInit = {}): Promise<Response>
 
 export async function apiGet<T>(path: string): Promise<T> {
 	const response = await apiFetch(path);
-	return response.json() as Promise<T>;
+	return response.status === 204 ? (undefined as T) : (response.json() as Promise<T>);
 }
 
 export async function apiPost<T>(path: string, body?: unknown): Promise<T> {

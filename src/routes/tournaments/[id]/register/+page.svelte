@@ -5,9 +5,9 @@
 	import SidePanel from "$lib/components/SidePanel.svelte";
 	import TournamentMemberRegistrationFields from "$lib/components/TournamentMemberRegistrationFields.svelte";
 	import { _, locale, formatDate } from "$lib/i18n";
-	import { applyForTournament, getTournament, listRegistrations } from "$lib/backend";
+	import { applyForTournament, getMyLastRegistration, getTournament, listRegistrations } from "$lib/backend";
 	import { authReady, currentUser, isModerator } from "$lib/store";
-	import type { Tournament, TournamentRegistration } from "$lib/types";
+	import type { LastRegistrationData, Tournament, TournamentRegistration } from "$lib/types";
 	import { isLocked, isRegistrationWindowOpen, playerTierValue } from "$lib/tournamentState";
 	import {
 		applyDetailsToMemberForm,
@@ -30,6 +30,7 @@
 	let now = $state(Date.now());
 	let tournament = $state<Tournament>();
 	let myRegistration = $state<TournamentRegistration | null>(null);
+	let lastRegistration = $state<LastRegistrationData | null>(null);
 	let regLoaded = $state(false);
 
 	let form = $state(emptyMemberRegistrationForm());
@@ -81,9 +82,7 @@
 	});
 
 	function handlePrefillFromLastRegistration() {
-		const last = $currentUser?.lastRegistration;
-		if (!last) return;
-		applyDetailsToMemberForm(form, last);
+		applyDetailsToMemberForm(form, lastRegistration);
 	}
 
 	let isRegistering = $state(false);
@@ -143,13 +142,20 @@
 		const tournamentId = id;
 		if (!uid || !tournamentId) {
 			myRegistration = null;
+			lastRegistration = null;
 			regLoaded = true;
 			return;
 		}
 
 		let cancelled = false;
-		listRegistrations(tournamentId).then((registrations) => {
+		// Fetched here rather than kept on $currentUser, so it reflects registrations made earlier
+		// in this session. A failed fetch only loses the prefill button, never the form.
+		Promise.all([
+			listRegistrations(tournamentId),
+			getMyLastRegistration().catch(() => null),
+		]).then(([registrations, last]) => {
 			if (cancelled) return;
+			lastRegistration = last;
 			const mine = registrations.find((r) => r.playerId === uid) ?? null;
 			myRegistration = mine;
 			applyRegistrationData(mine);
@@ -181,7 +187,7 @@
 			{:else if !registrationWindowOpen}
 				<p class="notice">{$_("pageTournamentRegister.registrationClosed")}</p>
 			{:else if regLoaded}
-				{#if $currentUser?.lastRegistration}
+				{#if lastRegistration && !myRegistration}
 					<button
 						type="button"
 						class="btn-common prefill-btn"
