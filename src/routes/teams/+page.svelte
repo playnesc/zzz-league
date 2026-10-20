@@ -8,14 +8,17 @@
 	import type { Team, TeamCursor } from "$lib/types";
 	import { onMount } from "svelte";
 
-	const PAGE_SIZE = 20;
+	const PAGE_SIZE = 18;
 
-	let teams = $state<Team[]>([]);
-	let cursor = $state<TeamCursor | null>(null);
-	let hasMore = $state(true);
+	// Keyset-only API (no offset/total count), so Prev/Next caches each fetched page plus the
+	// cursor leading into it — same pager as HistoryList.svelte.
+	let pageIndex = $state(0);
+	let pageCache = $state<Team[][]>([]);
+	let cursorForPage = $state<(TeamCursor | null)[]>([null]);
+	let hasMoreAfterPage = $state<boolean[]>([]);
 	let loading = $state(true);
-	let loadingMore = $state(false);
-	let sentinel = $state<HTMLDivElement | undefined>();
+
+	let teams = $derived(pageCache[pageIndex] ?? []);
 
 	let detailsOpen = $state(false);
 	let selectedTeam = $state<Team | null>(null);
@@ -27,50 +30,29 @@
 		teams.filter((t) => t.name.toLowerCase().includes(searchQuery.toLowerCase())),
 	);
 
-	function cursorOf(team: Team): TeamCursor {
-		return { createdAt: team.createdAt, id: team.id };
-	}
-
-	async function loadMore() {
-		// `loading` guards against the IntersectionObserver's initial "already intersecting"
-		// callback firing before the first page resolves (see HistoryList.svelte for the same fix).
-		if (!hasMore || loadingMore || loading) return;
-		loadingMore = true;
-		try {
-			const page = await listTeamsPage(cursor, PAGE_SIZE);
-			teams = [...teams, ...page.teams];
-			hasMore = page.hasMore;
-			if (page.teams.length) cursor = cursorOf(page.teams[page.teams.length - 1]);
-		} finally {
-			loadingMore = false;
+	async function loadPage(index: number) {
+		if (index < 0) return;
+		if (pageCache[index]) {
+			pageIndex = index;
+			return;
 		}
-	}
 
-	onMount(async () => {
 		loading = true;
 		try {
-			const page = await listTeamsPage(null, PAGE_SIZE);
-			teams = page.teams;
-			hasMore = page.hasMore;
-			if (page.teams.length) cursor = cursorOf(page.teams[page.teams.length - 1]);
+			const page = await listTeamsPage(cursorForPage[index] ?? null, PAGE_SIZE);
+			pageCache[index] = page.teams;
+			hasMoreAfterPage[index] = page.hasMore;
+			if (page.hasMore && page.teams.length) {
+				const last = page.teams[page.teams.length - 1];
+				cursorForPage[index + 1] = { createdAt: last.createdAt, id: last.id };
+			}
+			pageIndex = index;
 		} finally {
 			loading = false;
 		}
-	});
+	}
 
-	$effect(() => {
-		if (!sentinel) return;
-
-		const observer = new IntersectionObserver(
-			(entries) => {
-				if (entries[0].isIntersecting) loadMore();
-			},
-			{ rootMargin: "200px" },
-		);
-		observer.observe(sentinel);
-
-		return () => observer.disconnect();
-	});
+	onMount(() => loadPage(0));
 
 	function openDetails(team: Team) {
 		selectedTeam = team;
@@ -85,11 +67,12 @@
 
 	function handleSaved(updated: Team) {
 		formOpen = false;
-		teams = teams.map((t) => (t.id === updated.id ? updated : t));
+		pageCache = pageCache.map((page) => page.map((t) => (t.id === updated.id ? updated : t)));
 	}
 
+	// Cursors are (createdAt, id) boundaries, not row references, so they stay valid after a delete.
 	function handleDeleted(teamId: string) {
-		teams = teams.filter((t) => t.id !== teamId);
+		pageCache = pageCache.map((page) => page.filter((t) => t.id !== teamId));
 	}
 </script>
 
@@ -125,8 +108,20 @@
 			</div>
 		{/if}
 
-		{#if hasMore}
-			<div class="load-sentinel" bind:this={sentinel}></div>
+		{#if pageIndex > 0 || hasMoreAfterPage[pageIndex]}
+			<div class="pager">
+				<button class="btn-common btn-sm" disabled={pageIndex === 0 || loading} onclick={() => loadPage(pageIndex - 1)}>
+					<svg aria-hidden="true" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+					{$_("pageTeams.previous")}
+				</button>
+				<span class="pager-label"
+					>{$_("pageTeams.pageLabel", { values: { page: pageIndex + 1 } })}</span
+				>
+				<button class="btn-common btn-sm" disabled={!hasMoreAfterPage[pageIndex] || loading} onclick={() => loadPage(pageIndex + 1)}>
+					{$_("pageTeams.next")}
+					<svg aria-hidden="true" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+				</button>
+			</div>
 		{/if}
 	</div>
 </div>
@@ -184,7 +179,17 @@
 		width: 100%;
 	}
 
-	.load-sentinel {
-		height: 1px;
+	.pager {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 16px;
+		padding: 16px 0 4px;
+	}
+
+	.pager-label {
+		font-size: 12px;
+		color: var(--text-muted);
+		font-weight: 600;
 	}
 </style>

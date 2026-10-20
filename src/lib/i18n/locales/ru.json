@@ -79,7 +79,10 @@
 		"noResults": "Команды по запросу не найдены.",
 		"title": "Команды",
 		"searchPlaceholder": "Поиск…",
-		"noTeams": "Команд пока нет"
+		"noTeams": "Команд пока нет",
+		"previous": "Назад",
+		"next": "Вперед",
+		"pageLabel": "Страница {page}"
 	},
 	"pageTeamsMine": {
 		"title": "Мои команды",

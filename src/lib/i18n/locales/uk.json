@@ -79,7 +79,10 @@
 		"noResults": "Команд за запитом не знайдено.",
 		"title": "Команди",
 		"searchPlaceholder": "Пошук…",
-		"noTeams": "Команд поки немає"
+		"noTeams": "Команд поки немає",
+		"previous": "Назад",
+		"next": "Вперед",
+		"pageLabel": "Сторінка {page}"
 	},
 	"pageTeamsMine": {
 		"title": "Мої команди",

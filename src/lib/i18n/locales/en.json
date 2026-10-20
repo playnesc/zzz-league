@@ -79,7 +79,10 @@
 		"noResults": "No teams match your search.",
 		"title": "Teams",
 		"searchPlaceholder": "Search…",
-		"noTeams": "No teams yet"
+		"noTeams": "No teams yet",
+		"previous": "Previous",
+		"next": "Next",
+		"pageLabel": "Page {page}"
 	},
 	"pageTeamsMine": {
 		"title": "My teams",

@@ -30,7 +30,7 @@
 
 	let { viewerId = undefined }: { viewerId?: string } = $props();
 
-	const PAGE_SIZE = 25;
+	const PAGE_SIZE = 18;
 
 	// The API only supports keyset ("seek") pagination — no offset/page-number or total-count
 	// query — so a real Prev/Next pager has to cache each page it has already fetched (by index)
