@@ -1,6 +1,6 @@
 import { apiDelete, apiGet, apiPost, apiPut } from '../api';
 import type { TournamentRegistration } from '../types';
-import { epoch, fileToBase64, type TournamentRegistrationDto } from './dtos';
+import { epoch, screenshotToBase64, type TournamentRegistrationDto } from './dtos';
 
 function toRegistration(dto: TournamentRegistrationDto): TournamentRegistration {
 	return {
@@ -34,8 +34,8 @@ async function detailsRequestBody(input: RegistrationFormInput) {
 		darteNickname: input.darteNickname,
 		dartePresetName: input.darteAccount,
 		rosterName: input.dartePreset,
-		rosterScreenshot: input.rosterScreenshot ? await fileToBase64(input.rosterScreenshot) : undefined,
-		hoyolabScreenshot: input.hoyolabScreenshot ? await fileToBase64(input.hoyolabScreenshot) : undefined,
+		rosterScreenshot: input.rosterScreenshot ? await screenshotToBase64(input.rosterScreenshot) : undefined,
+		hoyolabScreenshot: input.hoyolabScreenshot ? await screenshotToBase64(input.hoyolabScreenshot) : undefined,
 	};
 }
 

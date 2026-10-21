@@ -1,4 +1,4 @@
-import type { Handle } from "@sveltejs/kit";
+import type { Handle, HandleServerError } from "@sveltejs/kit";
 import { LOCALE_COOKIE, isSupportedLocale, localeFromAcceptLanguage } from "$lib/i18n";
 import { SESSION_COOKIE } from "$lib/server/session";
 
@@ -15,4 +15,11 @@ export const handle: Handle = async ({ event, resolve }) => {
 	return resolve(event, {
 		transformPageChunk: ({ html }) => html.replace("%lang%", locale),
 	});
+};
+
+// Kit's default handler logs every 404 too, which on a public server is mostly bots probing for
+// /.env, /wp-admin and the like. Only real errors are worth a log line.
+export const handleError: HandleServerError = ({ error, event, status }) => {
+	if (status === 404) return;
+	console.error(`[${status}] ${event.request.method} ${event.url.pathname}`, error);
 };

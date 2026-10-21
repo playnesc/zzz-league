@@ -304,3 +304,43 @@ export function fileToBase64(file: File): Promise<string> {
 		reader.readAsDataURL(file);
 	});
 }
+
+// Screenshots travel as base64 inside the JSON body, so a raw 4K PNG makes a multi-MB request
+// that flaky networks/VPNs tend to cut mid-upload ("Failed to fetch"). Re-encoding to WebP (JPEG
+// where the browser can't encode WebP) with the long side capped keeps them to a few hundred KB
+// while small roster text stays legible. Any failure, or no size win, sends the original as-is.
+const MAX_SCREENSHOT_DIMENSION = 2560;
+const SCREENSHOT_QUALITY = 0.85;
+
+function canvasToBlob(canvas: HTMLCanvasElement, type: string): Promise<Blob | null> {
+	return new Promise((resolve) => canvas.toBlob(resolve, type, SCREENSHOT_QUALITY));
+}
+
+export async function compressScreenshot(file: File): Promise<File> {
+	if (!file.type.startsWith('image/') || file.type === 'image/gif' || file.type === 'image/svg+xml') return file;
+	try {
+		const bitmap = await createImageBitmap(file);
+		const scale = Math.min(1, MAX_SCREENSHOT_DIMENSION / Math.max(bitmap.width, bitmap.height));
+		const canvas = document.createElement('canvas');
+		canvas.width = Math.round(bitmap.width * scale);
+		canvas.height = Math.round(bitmap.height * scale);
+		const ctx = canvas.getContext('2d');
+		if (!ctx) return file;
+		ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+		bitmap.close();
+
+		// Browsers that can't encode the requested type silently fall back to PNG.
+		let blob = await canvasToBlob(canvas, 'image/webp');
+		if (blob?.type !== 'image/webp') blob = await canvasToBlob(canvas, 'image/jpeg');
+		if (!blob || blob.size >= file.size) return file;
+
+		const ext = blob.type.split('/')[1];
+		return new File([blob], file.name.replace(/\.[^.]*$/, '') + `.${ext}`, { type: blob.type });
+	} catch {
+		return file;
+	}
+}
+
+export async function screenshotToBase64(file: File): Promise<string> {
+	return fileToBase64(await compressScreenshot(file));
+}

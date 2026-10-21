@@ -1,6 +1,6 @@
 import { apiGet, apiPost } from '../api';
 import type { TournamentMatch } from '../types';
-import { fileToBase64, type NexusPreviewDto, type TournamentMatchDto } from './dtos';
+import { screenshotToBase64, type NexusPreviewDto, type TournamentMatchDto } from './dtos';
 
 export type NexusSide = 'left' | 'right';
 
@@ -48,7 +48,7 @@ export async function approveResult(
 	const dto = await apiPost<TournamentMatchDto>(`/api/tournaments/${tournamentId}/matches/${matchId}/result`, {
 		resultP1,
 		resultP2,
-		resultScreenshot: resultScreenshot ? await fileToBase64(resultScreenshot) : undefined,
+		resultScreenshot: resultScreenshot ? await screenshotToBase64(resultScreenshot) : undefined,
 		nexusResultUrl,
 		nexusP1Side,
 	});
@@ -69,7 +69,7 @@ export async function adminSetMatchResult(
 	const dto = await apiPost<TournamentMatchDto>(`/api/tournaments/${tournamentId}/matches/${matchId}/admin-result`, {
 		resultP1,
 		resultP2,
-		resultScreenshot: resultScreenshot ? await fileToBase64(resultScreenshot) : undefined,
+		resultScreenshot: resultScreenshot ? await screenshotToBase64(resultScreenshot) : undefined,
 		techLossPlayerId: techLossUid,
 		techLossTeamId,
 		nexusResultUrl,
