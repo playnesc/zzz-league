@@ -1,0 +1,153 @@
+<script lang="ts">
+	import { goto } from "$app/navigation";
+	import { resolve } from "$app/paths";
+	import { createTournament } from "$lib/backend";
+	import { _ } from "$lib/i18n";
+	import SidePanel from "$lib/components/SidePanel.svelte";
+	import TournamentFormFields from "$lib/components/TournamentFormFields.svelte";
+	import { getAuthSession } from "$lib/auth.svelte";
+	import type { TournamentGameMode, TournamentRegistrationKind } from "$lib/types";
+	import { parseAndValidateTournamentForm, toDateTimeLocal } from "$lib/tournamentForm";
+
+	const session = getAuthSession();
+
+	let name = $state("");
+	let description = $state("");
+	let registrationType = $state<TournamentRegistrationKind>("solo");
+	let gameMode = $state<TournamentGameMode>("shiyu_defense");
+
+	const now = new Date();
+	let registrationStartDate = $state(toDateTimeLocal(now));
+	let registrationEndDate = $state(toDateTimeLocal(now));
+	let tournamentStartDate = $state(toDateTimeLocal(now));
+	let tournamentEndDate = $state(toDateTimeLocal(now));
+	let tournamentType = $state("double elimination");
+	let breakTiesEnabled = $state(false);
+	let breakTiesPlace = $state(3);
+	let overrideEloEnabled = $state(false);
+	let overrideEloValue = $state(5);
+	let minCost = $state(2100);
+	let maxCost = $state(2200);
+	let minCharacters = $state(14);
+	let minTier = $state("0");
+	let maxTier = $state("1000");
+	let visible = $state(true);
+	let discordRoleName = $state("");
+	let discordChannelName = $state("");
+
+	let status = $state("");
+	let creatingTournament = $state(false);
+	let showErrors = $state(false);
+
+	async function handleCreateTournament() {
+		const result = parseAndValidateTournamentForm({
+			name,
+			registrationStartDate,
+			registrationEndDate,
+			tournamentStartDate,
+			tournamentEndDate,
+			tournamentType,
+			overrideEloEnabled,
+			overrideEloValue,
+			discordRoleName,
+			discordChannelName,
+		});
+		if (result.error !== null) {
+			showErrors = true;
+			status = result.error;
+			return;
+		}
+
+		showErrors = false;
+		try {
+			if (creatingTournament) return;
+			creatingTournament = true;
+			const created = await createTournament({
+				name,
+				description,
+				registrationType,
+				gameMode,
+				registrationStartDate: result.regStart,
+				registrationEndDate: result.regEnd,
+				tournamentStartDate: result.tourStart,
+				tournamentEndDate: result.tourEnd,
+				minCost,
+				maxCost,
+				minCharacters,
+				minTier: parseInt(minTier),
+				maxTier: parseInt(maxTier),
+				overrideEloChange: overrideEloEnabled ? overrideEloValue : -1,
+				bracketType: tournamentType,
+				consolationMatchesTargetRank: breakTiesEnabled
+					? breakTiesPlace
+					: null,
+				visible,
+				discordRoleName,
+				discordChannelName,
+			});
+			await goto(resolve(`/tournaments/${created.id}`));
+		} catch (e: any) {
+			status = e.message;
+		} finally {
+			creatingTournament = false;
+		}
+	}
+</script>
+
+<div class="layout">
+	<SidePanel></SidePanel>
+
+	<div class="card main-content">
+		{#if !session.ready}
+			<p class="notice">{$_("common.loading")}</p>
+		{:else if session.isAdmin}
+			<h2 class="page-title">{$_("pageTournamentsCreate.title")}</h2>
+
+			<TournamentFormFields
+				bind:name
+				bind:description
+				bind:registrationType
+				bind:gameMode
+				bind:tournamentType
+				bind:breakTiesEnabled
+				bind:breakTiesPlace
+				bind:overrideEloEnabled
+				bind:overrideEloValue
+				bind:minTier
+				bind:maxTier
+				bind:minCost
+				bind:maxCost
+				bind:minCharacters
+				bind:discordRoleName
+				bind:discordChannelName
+				bind:visible
+				bind:registrationStartDate
+				bind:registrationEndDate
+				bind:tournamentStartDate
+				bind:tournamentEndDate
+				{showErrors}
+			/>
+
+			{#if status}<p class="status error">{status}</p>{/if}
+
+			<div class="form-actions">
+				<button
+					class="btn-common btn-play"
+					class:btn-loading={creatingTournament}
+					onclick={handleCreateTournament}>{$_("common.create")}</button
+				>
+				<a class="btn-common" href={resolve("/tournaments")}>{$_("common.cancel")}</a>
+			</div>
+		{:else}
+			<p class="notice">{$_("pageTournamentsCreate.noPermission")}</p>
+		{/if}
+	</div>
+</div>
+
+<style>
+	.page-title {
+		font-size: 20px;
+		padding-bottom: 16px;
+	}
+
+</style>

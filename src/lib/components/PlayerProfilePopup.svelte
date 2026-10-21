@@ -1,0 +1,347 @@
+<script lang="ts">
+	import { modal } from "$lib/actions/modal";
+	import { resolve } from "$app/paths";
+	import { getAgentAvatar } from "$lib/agentAvatars";
+	import avatarPlaceholder from "$lib/assets/avatar-placeholder.webp";
+	import { _ } from "$lib/i18n";
+	import { getAuthSession } from "$lib/auth.svelte";
+	import type { PlayerListItem } from "$lib/types";
+	import { closeProfilePopup, getTier } from "$lib/uiCommon";
+	import PointsDelta from "$lib/components/PointsDelta.svelte";
+
+	const session = getAuthSession();
+
+	let { player = null }: { player?: PlayerListItem | null } = $props();
+
+	let avatar = $derived(getAgentAvatar(player?.avatar));
+
+	let copiedField = $state<string | null>(null);
+	async function copyToClipboard(text: string, field: string) {
+		if (!text) return;
+		try {
+			await navigator.clipboard.writeText(text);
+			copiedField = field;
+			setTimeout(() => {
+				if (copiedField === field) copiedField = null;
+			}, 1500);
+		} catch {}
+	}
+
+	let stats = $derived.by(() => {
+		const wins = player?.wins ?? 0;
+		const losses = player?.losses ?? 0;
+		const total = wins + losses;
+		return {
+			wins,
+			losses,
+			total,
+			winRate: total > 0 ? Math.round((wins / total) * 100) : 0,
+		};
+	});
+</script>
+
+<div class="popup">
+	<div class="card profile-card" use:modal={closeProfilePopup}>
+		<div class="close-row">
+			<button class="icon-btn" onclick={closeProfilePopup} aria-label={$_("common.close")}>
+				<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+			</button>
+		</div>
+		{#if !player}
+			<h1>{$_("playerProfilePopup.playerNotFound")}</h1>
+		{:else}
+			{@const tier = getTier(player)}
+
+			{#snippet copyIcon()}
+				<svg
+					width="18"
+					height="18"
+					viewBox="0 0 24 24"
+					fill="none"
+					xmlns="http://www.w3.org/2000/svg"
+				>
+					<path
+						d="M17.5 14H19C20.1046 14 21 13.1046 21 12V5C21 3.89543 20.1046 3 19 3H12C10.8954 3 10 3.89543 10 5V6.5M5 10H12C13.1046 10 14 10.8954 14 12V19C14 20.1046 13.1046 21 12 21H5C3.89543 21 3 20.1046 3 19V12C3 10.8954 3.89543 10 5 10Z"
+						stroke="currentColor"
+						stroke-width="1.5"
+						stroke-linecap="round"
+						stroke-linejoin="round"
+					/>
+				</svg>
+			{/snippet}
+
+			<div class="profile-header">
+				<span
+					class="avatar-wrap"
+					style="background-image: {avatar ? 'none' : `url(${avatarPlaceholder})`}"
+				>
+					{#if avatar}
+						<img class="profile-avatar" src={avatar.srcLarge} alt={avatar.name} />
+					{/if}
+				</span>
+				<div class="profile-header-info">
+					<div class="profile-name-row">
+						<h1 id="profName">{player.name}</h1>
+						<span class="tier-badge {tier.cls}">{tier.name}</span>
+					</div>
+					<button
+						type="button"
+						class="info-card"
+						class:copied={copiedField === "discord"}
+						disabled={!player.discordUsername}
+						onclick={() => copyToClipboard(player.discordUsername ?? "", "discord")}
+						title={$_("playerProfilePopup.copyTooltip")}
+					>
+						<span class="info-label">Discord</span>
+						<span class="info-value">{player.discordUsername ?? "-"}</span>
+						{#if copiedField === "discord"}
+							<span class="copied-label">{$_("playerProfilePopup.copied")}</span>
+						{/if}
+						<span class="copy-icon">{@render copyIcon()}</span>
+					</button>
+					{#if session.isAdmin}
+						<button
+							type="button"
+							class="info-card"
+							class:copied={copiedField === "uid"}
+							onclick={() => copyToClipboard(player.uid, "uid")}
+							title={$_("playerProfilePopup.copyTooltip")}
+						>
+							<span class="info-label">UID</span>
+							<span class="info-value">{player.uid}</span>
+							{#if copiedField === "uid"}
+								<span class="copied-label">{$_("playerProfilePopup.copied")}</span>
+							{/if}
+							<span class="copy-icon">{@render copyIcon()}</span>
+						</button>
+					{/if}
+				</div>
+			</div>
+
+			<div class="stat-grid">
+				<div class="stat-item elo-item">
+					<div class="stat-label">ELO</div>
+					<div id="elo" class="stat-value gold">
+						{player.elo ?? 1000}
+						<PointsDelta
+							points={player.tournamentPoints}
+							tag="span"
+							class="points"
+						/>
+					</div>
+				</div>
+				<div class="stat-item">
+					<div class="stat-label">{$_("playerProfilePopup.gamesPlayed")}</div>
+					<div id="totalGames" class="stat-value">{stats.total}</div>
+				</div>
+				<div class="stat-item">
+					<div class="stat-label">{$_("playerProfilePopup.winRate")}</div>
+					<div id="winRate" class="stat-value winrate">
+						{stats.winRate}%
+					</div>
+				</div>
+				<div class="stat-item">
+					<div class="stat-label">{$_("playerProfilePopup.wins")}</div>
+					<div id="wins" class="stat-value gain">{stats.wins}</div>
+				</div>
+				<div class="stat-item">
+					<div class="stat-label">{$_("playerProfilePopup.losses")}</div>
+					<div id="losses" class="stat-value loss">{stats.losses}</div>
+				</div>
+				<div class="stat-item">
+					<div class="stat-label">{$_("playerProfilePopup.tournamentsPlayed")}</div>
+					<div id="tournamentCount" class="stat-value">
+						{player.playedTournamentCount ?? 0}
+					</div>
+				</div>
+				<div class="stat-item">
+					<div class="stat-label">{$_("playerProfilePopup.tournamentsInSeason")}</div>
+					<div id="seasonalTournamentCount" class="stat-value">
+						{player.seasonalPlayedTournamentCount ?? 0}
+					</div>
+				</div>
+			</div>
+
+			<a
+				class="btn-common btn-play btn-history"
+				href={resolve(`/history/${player.uid}`)}
+				onclick={closeProfilePopup}
+			>
+				{$_("playerProfilePopup.matchHistory")}
+			</a>
+		{/if}
+	</div>
+</div>
+
+<style>
+	.profile-card {
+		width: 480px;
+		padding: 20px 26px 26px;
+		text-align: center;
+		gap: 18px;
+	}
+
+	.profile-header {
+		display: flex;
+		flex-direction: row;
+		align-items: center;
+		gap: 16px;
+		text-align: left;
+	}
+
+	.avatar-wrap {
+		flex-shrink: 0;
+		width: 88px;
+		height: 88px;
+		border-radius: 50%;
+		border: 2px solid var(--border);
+		background-size: cover;
+		background-position: center;
+		overflow: hidden;
+	}
+
+	.profile-avatar {
+		display: block;
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
+	}
+
+	.profile-header-info {
+		display: flex;
+		flex-direction: column;
+		align-items: stretch;
+		gap: 8px;
+		min-width: 0;
+		flex: 1;
+	}
+
+	.profile-name-row {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 10px;
+	}
+
+	.profile-name-row h1 {
+		margin-bottom: 0;
+		font-size: 20px;
+		color: var(--text);
+	}
+
+	.info-card {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		width: 100%;
+		background: var(--bg-elevated);
+		padding: 7px 11px;
+		border-radius: var(--r-md);
+		border: 1px solid var(--border);
+		font-size: 12px;
+		line-height: 1.3;
+		font-family: inherit;
+		cursor: pointer;
+		transition: 0.15s;
+	}
+
+	.info-card:hover {
+		border-color: var(--gold);
+	}
+
+	.info-card:disabled {
+		opacity: 0.5;
+		cursor: default;
+	}
+
+	.info-label {
+		flex-shrink: 0;
+		width: 58px;
+		text-align: left;
+		color: var(--text-dim);
+		font-size: 12px;
+		font-weight: 500;
+	}
+
+	.info-value {
+		flex: 1;
+		min-width: 0;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+		text-align: left;
+		color: var(--text-muted);
+	}
+
+	.copied-label {
+		flex-shrink: 0;
+		color: var(--gold);
+		font-size: 12px;
+		white-space: nowrap;
+	}
+
+	.copy-icon {
+		flex-shrink: 0;
+		align-self: center;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		color: var(--text-dim);
+		transition: 0.15s;
+	}
+
+	.info-card:hover .copy-icon,
+	.info-card.copied .copy-icon {
+		color: var(--gold);
+	}
+
+	.btn-history {
+		margin-top: 4px;
+	}
+
+	.stat-grid {
+		display: grid;
+		grid-template-columns: repeat(2, 1fr);
+		gap: 10px;
+		margin-top: 4px;
+	}
+
+	.stat-item {
+		height: 36px;
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 10px;
+		background: var(--bg-elevated);
+		padding: 0 11px;
+		border-radius: var(--r-md);
+		border: 1px solid var(--border);
+	}
+
+	.elo-item {
+		grid-column: 1 / -1;
+		height: 42px;
+	}
+
+	.stat-label {
+		color: var(--text-dim);
+		font-size: 12px;
+	}
+
+	.stat-value {
+		font-weight: 800;
+		font-size: 16px;
+	}
+
+	.elo-item .stat-value {
+		font-size: 18px;
+	}
+
+	.winrate {
+		color: var(--success);
+	}
+
+	.gold {
+		color: var(--gold);
+	}
+</style>

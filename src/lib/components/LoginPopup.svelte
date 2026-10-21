@@ -1,0 +1,183 @@
+<script lang="ts">
+	import { modal } from "$lib/actions/modal";
+	import { auth } from "$lib/firebase";
+	import { openDiscordOAuth } from "$lib/discord";
+	import { _ } from "$lib/i18n";
+	import { closeLoginPopup } from "$lib/uiCommon";
+	import {
+		sendPasswordResetEmail,
+		signInWithEmailAndPassword,
+	} from "firebase/auth";
+
+	function handleDiscordLogin() {
+		openDiscordOAuth("login");
+	}
+
+	let email = $state("");
+	let password = $state("");
+	let status = $state("");
+	let resettingPassword = $state(false);
+	let loggingIn = $state(false);
+
+	async function handleLogin() {
+		if (loggingIn) return;
+		status = "";
+		try {
+			loggingIn = true;
+			await signInWithEmailAndPassword(auth, email, password);
+			close();
+		} catch (error: any) {
+			status = error.message;
+		} finally {
+			loggingIn = false;
+		}
+	}
+
+	function close() {
+		email = "";
+		password = "";
+		closeLoginPopup();
+	}
+
+	async function handleResetPassword() {
+		try {
+			await sendPasswordResetEmail(auth, email);
+			status = $_("loginPopup.checkEmailMessage");
+		} catch (error: any) {
+			status = error.message;
+		}
+	}
+
+	function resetPassword() {
+		resettingPassword = true;
+		status = "";
+	}
+
+	function backFromReset() {
+		resettingPassword = false;
+		status = "";
+	}
+</script>
+
+<div class="popup">
+	<div class="card login-card" use:modal={close}>
+		<div class="close-row">
+			<button class="icon-btn" onclick={close} aria-label={$_("common.close")}>
+				<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+			</button>
+		</div>
+
+		{#if resettingPassword}
+			<h1 class="popup-title">{$_("loginPopup.resetPasswordTitle")}</h1>
+			<div class="field-group">
+				<label for="login-reset-email">{$_("loginPopup.emailLabel")}</label>
+				<input
+					id="login-reset-email"
+					type="email"
+					autocomplete="email"
+					bind:value={email}
+					placeholder={$_("loginPopup.emailLabel")}
+				/>
+			</div>
+
+			{#if status}<p class="status error">{status}</p>{/if}
+			<button
+				class="btn-common btn-play"
+				onclick={() => handleResetPassword()}>{$_("loginPopup.sendCode")}</button
+			>
+			<button class="btn-reset-password" onclick={() => backFromReset()}>
+				<svg aria-hidden="true" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+				{$_("loginPopup.backToLogin")}
+			</button>
+		{:else}
+			<h1 class="popup-title">{$_("loginPopup.title")}</h1>
+			<button class="btn-common btn-discord" onclick={handleDiscordLogin}>
+				<svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M20.317 4.3698a19.7913 19.7913 0 00-4.8851-1.5152.0741.0741 0 00-.0785.0371c-.211.3753-.4447.8648-.6083 1.2495-1.8447-.2762-3.68-.2762-5.4868 0-.1636-.3933-.4058-.8742-.6177-1.2495a.077.077 0 00-.0785-.037 19.7362 19.7362 0 00-4.8852 1.515.0699.0699 0 00-.0321.0277C.5334 9.0458-.319 13.5799.0992 18.0578a.0824.0824 0 00.0312.0561c2.0528 1.5076 4.0413 2.4228 5.9929 3.0294a.0777.0777 0 00.0842-.0276c.4616-.6304.8731-1.2952 1.226-1.9942a.076.076 0 00-.0416-.1057c-.6528-.2476-1.2743-.5495-1.8722-.8923a.077.077 0 01-.0076-.1277c.1258-.0943.2517-.1923.3718-.2914a.0743.0743 0 01.0776-.0105c3.9278 1.7933 8.18 1.7933 12.0614 0a.0739.0739 0 01.0785.0095c.1202.099.246.1981.3728.2924a.077.077 0 01-.0066.1276 12.2986 12.2986 0 01-1.873.8914.0766.0766 0 00-.0407.1067c.3604.698.7719 1.3628 1.225 1.9932a.076.076 0 00.0842.0286c1.961-.6067 3.9495-1.5219 6.0023-3.0294a.077.077 0 00.0313-.0552c.5004-5.177-.8382-9.6739-3.5485-13.6604a.061.061 0 00-.0312-.0286zM8.02 15.3312c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9555-2.4189 2.157-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.9555 2.4189-2.1569 2.4189zm7.9748 0c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9554-2.4189 2.1569-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.946 2.4189-2.1568 2.4189Z"/></svg>
+				{$_("loginPopup.discordLogin")}
+			</button>
+			<p class="login-divider">{$_("loginPopup.orByEmail")}</p>
+			<div class="field-group">
+				<label for="login-email">{$_("loginPopup.emailLabel")}</label>
+				<input
+					id="login-email"
+					type="email"
+					autocomplete="username"
+					bind:value={email}
+					placeholder={$_("loginPopup.emailLabel")}
+				/>
+			</div>
+			<div class="field-group">
+				<label for="login-password">{$_("loginPopup.passwordLabel")}</label>
+				<input
+					id="login-password"
+					type="password"
+					autocomplete="current-password"
+					bind:value={password}
+					placeholder={$_("loginPopup.passwordLabel")}
+					onkeydown={(e) => e.key === "Enter" && handleLogin()}
+				/>
+			</div>
+			{#if status}<p class="status error">{status}</p>{/if}
+			<button
+				class="btn-common btn-play"
+				class:btn-loading={loggingIn}
+				onclick={handleLogin}
+				>{$_("loginPopup.login")}</button
+			>
+			<button class="btn-reset-password" onclick={resetPassword}
+				>{$_("loginPopup.forgotPassword")}</button
+			>
+		{/if}
+	</div>
+</div>
+
+<style>
+	.login-card {
+		width: 380px;
+		padding: 20px 26px 26px;
+		gap: 14px;
+	}
+
+	.btn-discord {
+		--btn-fg: white;
+		background: var(--discord);
+		color: white;
+		border-color: var(--discord);
+	}
+
+	.btn-discord:hover {
+		background: var(--discord-hover);
+	}
+
+	.btn-reset-password {
+		all: unset;
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		cursor: pointer;
+		align-self: center;
+		color: var(--text-muted);
+	}
+
+	.btn-reset-password:hover {
+		color: var(--text);
+	}
+
+	.login-divider {
+		text-align: center;
+		color: var(--text-muted);
+		margin: 4px 0;
+	}
+
+	.field-group {
+		display: flex;
+		flex-direction: column;
+		gap: 6px;
+	}
+
+	.field-group label {
+		font-size: 12px;
+		color: var(--text-dim);
+		font-weight: 600;
+	}
+</style>

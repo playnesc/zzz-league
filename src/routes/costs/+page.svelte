@@ -1,0 +1,170 @@
+<script lang="ts">
+	import { API_BASE_URL } from "$lib/api";
+	import { importAgentCostsCsv, importEngineCostsCsv } from "$lib/api/communityCosts";
+	import { _ } from "$lib/i18n";
+	import CommunityCostsTable from "$lib/components/CommunityCostsTable.svelte";
+	import WeaponCostsTable from "$lib/components/WeaponCostsTable.svelte";
+	import SidePanel from "$lib/components/SidePanel.svelte";
+	import { CostsData, setCostsData } from "$lib/costsData.svelte";
+	import { getAuthSession } from "$lib/auth.svelte";
+	import { onMount } from "svelte";
+
+	const session = getAuthSession();
+	const costs = setCostsData(new CostsData());
+
+	let activeTab = $state<"agents" | "weapons">("agents");
+	let importing = $state(false);
+	let importStatus = $state("");
+	let agentFileInput = $state<HTMLInputElement | undefined>();
+	let engineFileInput = $state<HTMLInputElement | undefined>();
+
+	onMount(() => {
+		costs.refreshAgentCosts();
+		costs.refreshEngineCosts();
+		costs.refreshContributions();
+	});
+
+	async function handleImport(file: File | undefined, kind: "agents" | "engines") {
+		if (!file || importing) return;
+		importing = true;
+		importStatus = "";
+		try {
+			const csv = await file.text();
+			if (kind === "agents") {
+				await importAgentCostsCsv(csv);
+				await costs.refreshAgentCosts();
+			} else {
+				await importEngineCostsCsv(csv);
+				await costs.refreshEngineCosts();
+			}
+			importStatus = $_("pageCosts.importSuccess");
+		} catch (error: any) {
+			importStatus = error.message;
+		} finally {
+			importing = false;
+		}
+	}
+</script>
+
+<div class="layout">
+	<SidePanel></SidePanel>
+
+	<div class="content-column">
+		<div class="top-tabs">
+			<button
+				class="top-tab"
+				class:active={activeTab === "agents"}
+				aria-pressed={activeTab === "agents"}
+				onclick={() => (activeTab = "agents")}
+			>
+				{$_("pageCosts.agentsTab")}
+			</button>
+			<button
+				class="top-tab"
+				class:active={activeTab === "weapons"}
+				aria-pressed={activeTab === "weapons"}
+				onclick={() => (activeTab = "weapons")}
+			>
+				{$_("pageCosts.weaponsTab")}
+			</button>
+
+			<div class="csv-actions">
+				{#if activeTab === "agents"}
+					<a class="btn-common" href="{API_BASE_URL}/api/community-costs/agents/export.csv" download>
+						{$_("pageCosts.exportCsv")}
+					</a>
+					{#if session.isAdmin}
+						<button class="btn-common" disabled={importing} onclick={() => agentFileInput?.click()}>
+							{importing ? $_("pageCosts.importing") : $_("pageCosts.importCsv")}
+						</button>
+						<input
+							bind:this={agentFileInput}
+							type="file"
+							accept=".csv"
+							hidden
+							onchange={(e) => handleImport(e.currentTarget.files?.[0], "agents")}
+						/>
+					{/if}
+				{:else}
+					<a class="btn-common" href="{API_BASE_URL}/api/community-costs/engines/export.csv" download>
+						{$_("pageCosts.exportCsv")}
+					</a>
+					{#if session.isAdmin}
+						<button class="btn-common" disabled={importing} onclick={() => engineFileInput?.click()}>
+							{importing ? $_("pageCosts.importing") : $_("pageCosts.importCsv")}
+						</button>
+						<input
+							bind:this={engineFileInput}
+							type="file"
+							accept=".csv"
+							hidden
+							onchange={(e) => handleImport(e.currentTarget.files?.[0], "engines")}
+						/>
+					{/if}
+				{/if}
+			</div>
+		</div>
+
+		{#if importStatus}
+			<p class="notice">{importStatus}</p>
+		{/if}
+
+		{#if activeTab === "agents"}
+			<CommunityCostsTable />
+		{:else}
+			<WeaponCostsTable />
+		{/if}
+	</div>
+</div>
+
+<style>
+	.content-column {
+		display: flex;
+		flex-direction: column;
+		gap: 20px;
+	}
+
+	.top-tabs {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 8px;
+	}
+
+	.top-tab {
+		background: var(--surface-2);
+		border: 1px solid var(--border);
+		color: var(--text-muted);
+		padding: 9px 16px;
+		border-radius: var(--r-md);
+		cursor: pointer;
+		font-weight: 700;
+		font-size: 12px;
+		font-family: inherit;
+		transition: 0.15s;
+	}
+
+	.top-tab:hover {
+		border-color: var(--gold-border);
+		color: var(--text);
+	}
+
+	.top-tab.active {
+		border-color: var(--gold-border);
+		color: var(--gold);
+		background: var(--gold-dim);
+	}
+
+	.csv-actions {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 8px;
+		margin-left: auto;
+	}
+
+	.csv-actions .btn-common {
+		height: 32px;
+		padding: 0 12px;
+		width: auto;
+	}
+</style>

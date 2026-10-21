@@ -1,0 +1,289 @@
+<script lang="ts">
+	import { modal } from "$lib/actions/modal";
+	import { createTeam, listPlayers, updateTeam } from "$lib/backend";
+	import { useObjectUrlPreview } from "$lib/imagePreview.svelte.js";
+	import { _ } from "$lib/i18n";
+	import { getAuthSession } from "$lib/auth.svelte";
+	import type { PlayerListItem, Team } from "$lib/types";
+	import { bustCache, isImageTooLarge, MAX_IMAGE_SIZE_MB, openImagePopup } from "$lib/uiCommon";
+
+	const session = getAuthSession();
+
+	let {
+		open = $bindable(false),
+		team = null,
+		onSaved = undefined,
+	}: {
+		open?: boolean;
+		team?: Team | null;
+		onSaved?: (team: Team) => void;
+	} = $props();
+
+	let isEdit = $derived(!!team);
+
+	let name = $state("");
+	let searchQuery = $state("");
+	let selectedPlayer2Uid = $state("");
+	let existingPhotoUrl = $state("");
+	let photoFile = $state<FileList | null>(null);
+	let status = $state("");
+	let saving = $state(false);
+	let players = $state<PlayerListItem[]>([]);
+
+	let photoPreview = useObjectUrlPreview(() => photoFile?.[0]);
+	// Native file input is visually hidden — "Выбрать логотип" triggers it programmatically so
+	// the button can be styled like the rest of the design system instead of the OS-default input.
+	let photoFileInput: HTMLInputElement | undefined = $state();
+
+	$effect(() => {
+		if (open) {
+			name = team?.name ?? "";
+			selectedPlayer2Uid = team?.player2.uid ?? "";
+			existingPhotoUrl = team?.photoUrl ?? "";
+			photoFile = null;
+			searchQuery = "";
+			status = "";
+			listPlayers().then((loaded) => (players = loaded));
+		}
+	});
+
+	let availablePlayers = $derived(
+		players.filter(
+			(p) =>
+				p.uid !== session.user?.uid &&
+				p.name.toLowerCase().includes(searchQuery.toLowerCase()),
+		),
+	);
+
+	function close() {
+		open = false;
+	}
+
+	async function handleSave() {
+		// Player 2 is fixed at creation — an edit only ever touches name/photo.
+		if (saving || !name.trim() || (!isEdit && !selectedPlayer2Uid) || !session.user) return;
+
+		const photo = photoFile?.[0] ?? null;
+		if (photo && isImageTooLarge(photo)) {
+			status = $_("teamFormPopup.fileTooLarge", { values: { maxSize: MAX_IMAGE_SIZE_MB } });
+			return;
+		}
+
+		saving = true;
+		status = "";
+		try {
+			const saved = isEdit
+				? await updateTeam(team!.id, name.trim(), photo)
+				: await createTeam(session.user.uid, selectedPlayer2Uid, name.trim(), photo);
+			onSaved?.(saved);
+		} catch (error: any) {
+			status = error.message;
+		} finally {
+			saving = false;
+		}
+	}
+</script>
+
+{#if open}
+	<div class="popup">
+		<div class="card team-form-card" use:modal={close}>
+			<div class="close-row">
+				<button class="icon-btn" onclick={close} aria-label={$_("common.close")}>
+					<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+				</button>
+			</div>
+
+			<h2 class="popup-title">{isEdit ? $_("teamFormPopup.editTitle") : $_("teamFormPopup.createTitle")}</h2>
+
+			<div class="logo-row">
+				{#if photoPreview.url}
+					<button
+						class="logo-box has-image"
+						onclick={() => openImagePopup(photoPreview.url!)}
+					>
+						<img src={photoPreview.url} alt="" />
+					</button>
+				{:else if existingPhotoUrl}
+					<button
+						class="logo-box has-image"
+						onclick={() => openImagePopup(existingPhotoUrl)}
+					>
+						<img src={bustCache(existingPhotoUrl)} alt="" />
+					</button>
+				{:else}
+					<span class="logo-box">
+						<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+					</span>
+				{/if}
+				<div class="logo-upload">
+					<input
+						bind:this={photoFileInput}
+						class="hidden-file-input"
+						id="team-photo"
+						type="file"
+						accept="image/*"
+						bind:files={photoFile}
+					/>
+					<button
+						type="button"
+						class="btn-common"
+						onclick={() => photoFileInput?.click()}>{$_("teamFormPopup.chooseLogo")}</button
+					>
+					{#if existingPhotoUrl && !photoPreview.url}
+						<span class="logo-hint">{$_("teamFormPopup.logoHint")}</span>
+					{/if}
+				</div>
+			</div>
+
+			<div class="form-row">
+				<label for="team-name">{$_("teamFormPopup.nameLabel")}</label>
+				<input
+					id="team-name"
+					type="text"
+					bind:value={name}
+					placeholder={$_("teamFormPopup.namePlaceholder")}
+				/>
+			</div>
+
+			{#if isEdit}
+				<div class="form-row">
+					<label for="team-player2-readonly">{$_("teamFormPopup.partnerLabel")}</label>
+					<p id="team-player2-readonly" class="readonly-value">{team!.player2.name}</p>
+				</div>
+			{:else}
+				<div class="form-row">
+					<label for="team-player2-search">{$_("teamFormPopup.searchPartnerLabel")}</label>
+					<span class="search-wrap">
+						<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" class="search-icon"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+						<input
+							id="team-player2-search"
+							type="text"
+							class="search-input"
+							placeholder={$_("teamFormPopup.searchPlaceholder")}
+							bind:value={searchQuery}
+						/>
+					</span>
+				</div>
+
+				<div class="form-row">
+					<label for="team-player2-select">{$_("teamFormPopup.partnerLabel")}</label>
+					<span class="select-wrap">
+						<select id="team-player2-select" bind:value={selectedPlayer2Uid}>
+							<option value="">{$_("teamFormPopup.selectPlayerOption")}</option>
+							{#each availablePlayers as player (player.uid)}
+								<option value={player.uid}>{player.name}</option>
+							{/each}
+						</select>
+						<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="select-arrow"><polyline points="6 9 12 15 18 9"/></svg>
+					</span>
+				</div>
+			{/if}
+
+			{#if status}<p class="status error">{status}</p>{/if}
+			<button
+				class="btn-common btn-play btn-block"
+				class:btn-loading={saving}
+				disabled={!name.trim() || (!isEdit && !selectedPlayer2Uid)}
+				onclick={handleSave}>{$_("common.save")}</button
+			>
+		</div>
+	</div>
+{/if}
+
+<style>
+	.team-form-card {
+		width: 440px;
+		max-width: 90vw;
+		padding: 20px 26px 26px;
+		gap: 14px;
+	}
+
+	.logo-row {
+		display: flex;
+		gap: 14px;
+		align-items: center;
+	}
+
+	.logo-box {
+		width: 64px;
+		height: 64px;
+		border-radius: var(--r-md);
+		background: var(--bg-elevated);
+		border: 1px solid var(--border);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		color: var(--text-dim);
+		flex-shrink: 0;
+		padding: 0;
+		cursor: default;
+	}
+
+	.logo-box.has-image {
+		cursor: pointer;
+		overflow: hidden;
+	}
+
+	.logo-box img {
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
+		display: block;
+	}
+
+	.logo-upload {
+		flex: 1;
+		display: flex;
+		flex-direction: column;
+		gap: 6px;
+		min-width: 0;
+	}
+
+	.hidden-file-input {
+		display: none;
+	}
+
+	.logo-hint {
+		font-size: 11px;
+		color: var(--text-dim);
+	}
+
+	.form-row {
+		display: flex;
+		align-items: center;
+		gap: 14px;
+	}
+
+	.form-row label {
+		flex: 0 0 110px;
+		color: var(--text-muted);
+		font-size: 12px;
+	}
+
+	.form-row input,
+	.form-row .search-wrap,
+	.form-row .select-wrap,
+	.form-row .readonly-value {
+		flex: 1;
+		min-width: 0;
+	}
+
+	.readonly-value {
+		margin: 0;
+		height: 36px;
+		display: flex;
+		align-items: center;
+		padding: 0 12px;
+		border-radius: var(--r-md);
+		background: var(--bg-elevated);
+		border: 1px solid var(--border-soft);
+		color: var(--text-muted);
+		font-size: 12px;
+		font-weight: 600;
+	}
+
+	.btn-block {
+		width: 100%;
+		margin-top: 4px;
+	}
+</style>

@@ -1,0 +1,400 @@
+<script lang="ts">
+	import { onMount } from "svelte";
+	import { listArchives, listPlayers } from "$lib/backend";
+	import { _ } from "$lib/i18n";
+	import type { Archive, Player, PlayerListItem } from "$lib/types";
+	import Leaderboard from "$lib/components/Leaderboard.svelte";
+	import SidePanel from "$lib/components/SidePanel.svelte";
+	import TournamentCard from "$lib/components/TournamentCard.svelte";
+	import { getAuthSession } from "$lib/auth.svelte";
+	import { getLeagueData } from "$lib/leagueData.svelte";
+	import { capDefaultHeight } from "$lib/actions/capDefaultHeight";
+	import { TOURNAMENT_STATE } from "$lib/tournamentState";
+
+	const session = getAuthSession();
+	const league = getLeagueData();
+
+	let filteredTournaments = $derived(
+		league.tournaments
+			.filter((t) => {
+				if (t.visible === false && !session.isModerator) return false;
+				if (t.state !== TOURNAMENT_STATE.COMPLETE) return true;
+				const expiration = 1 * 24 * 60 * 60 * 1000;
+				return Date.now() - t.tournamentEndDate < expiration;
+			})
+			.sort((a, b) => b.tournamentStartDate - a.tournamentStartDate),
+	);
+
+	let archives = $state<Archive[]>([]);
+	let livePlayers = $state<PlayerListItem[]>([]);
+	let livePlayersLoaded = $state(false);
+
+	let searchQuery = $state("");
+	let showInactivePlayers = $state(false);
+
+	let isViewingArchive = $state(false);
+	let archiveKey = $state("");
+
+	let displayPlayers = $derived(
+		isViewingArchive
+			? (archives.find((a) => a.seasonName === archiveKey)?.players ?? [])
+			: livePlayers,
+	);
+
+	function handlePlayerUpdated(updated: Player) {
+		const index = livePlayers.findIndex((p) => p.uid === updated.uid);
+		if (index === -1) return;
+		const next = [...livePlayers];
+		next[index] = updated;
+		livePlayers = next;
+	}
+
+	function handlePlayerDeleted(uid: string) {
+		livePlayers = livePlayers.filter((p) => p.uid !== uid);
+	}
+
+	let now = $state(Date.now());
+
+	let timerParts = $derived.by(() => {
+		if (!league.seasonTimerEndsAt) return null;
+		const diff = league.seasonTimerEndsAt - now;
+		if (diff <= 0) return { ended: true as const };
+		return {
+			ended: false as const,
+			d: Math.floor(diff / 86400000),
+			h: Math.floor((diff % 86400000) / 3600000),
+			m: Math.floor((diff % 3600000) / 60000),
+			s: Math.floor((diff % 60000) / 1000),
+		};
+	});
+
+	onMount(() => {
+		listArchives().then((loaded) => (archives = loaded));
+		listPlayers().then((loaded) => {
+			livePlayers = loaded;
+			livePlayersLoaded = true;
+		});
+		league.refreshSeasonTimer();
+
+		const interval = setInterval(() => {
+			now = Date.now();
+		}, 1000);
+
+		return () => {
+			clearInterval(interval);
+		};
+	});
+
+	function loadArchive(key: string) {
+		isViewingArchive = true;
+		archiveKey = key;
+	}
+
+	function loadLive() {
+		isViewingArchive = false;
+		archiveKey = "";
+	}
+
+</script>
+
+<div class="layout">
+	<SidePanel></SidePanel>
+	<div class="main-content">
+		{#if timerParts}
+			<div class="timer-card">
+				<div class="timer-info">
+					<div class="timer-icon">
+						<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15.5 14"/></svg>
+					</div>
+					<div class="timer-label">{$_("pageHome.timeUntilEnd")}</div>
+				</div>
+				{#if timerParts.ended}
+					<div class="timer-ended">{$_("pageHome.seasonEnded")}</div>
+				{:else}
+					<div class="timer-segments">
+						<div class="timer-segment">
+							<div class="timer-value gold">{timerParts.d}</div>
+							<div class="timer-unit">{$_("pageHome.days")}</div>
+						</div>
+						<div class="timer-colon">:</div>
+						<div class="timer-segment">
+							<div class="timer-value">{String(timerParts.h).padStart(2, "0")}</div>
+							<div class="timer-unit">{$_("pageHome.hours")}</div>
+						</div>
+						<div class="timer-colon">:</div>
+						<div class="timer-segment">
+							<div class="timer-value">{String(timerParts.m).padStart(2, "0")}</div>
+							<div class="timer-unit">{$_("pageHome.minutes")}</div>
+						</div>
+						<div class="timer-colon">:</div>
+						<div class="timer-segment">
+							<div class="timer-value dim">{String(timerParts.s).padStart(2, "0")}</div>
+							<div class="timer-unit">{$_("pageHome.seconds")}</div>
+						</div>
+					</div>
+				{/if}
+			</div>
+		{/if}
+
+		{#if filteredTournaments && filteredTournaments.length > 0}
+			<div>
+				<h2 class="section-heading">{$_("pageHome.tournamentsHeading")}</h2>
+				<div class="tournament-container">
+					{#each filteredTournaments as tournament}
+						<TournamentCard {tournament} {now} />
+					{/each}
+				</div>
+			</div>
+		{/if}
+
+		<div class="card leaderboard-card">
+			<div class="search-container">
+				<h2>
+					{isViewingArchive
+						? $_("pageHome.archiveTitle", { values: { name: archiveKey } })
+						: $_("pageHome.leaderboardTitle")}
+				</h2>
+				<div class="toolbar">
+					{#if isViewingArchive}
+						<button class="btn-common btn-sm" onclick={loadLive}>
+							<svg aria-hidden="true" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+							{$_("pageHome.currentLeague")}
+						</button>
+					{:else}
+						<label class="filter-toggle">
+							<span class="cb-wrap">
+								<input type="checkbox" bind:checked={showInactivePlayers} class="cb-input" />
+								{#if showInactivePlayers}
+									<svg class="cb-check" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+								{/if}
+							</span>
+							<p>{$_("pageHome.showInactivePlayers")}</p>
+						</label>
+					{/if}
+					<div class="search-field">
+						<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" class="search-icon"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+						<input
+							class="search-input"
+							type="search"
+							aria-label={$_("pageHome.searchPlaceholder")}
+							placeholder={$_("pageHome.searchPlaceholder")}
+							bind:value={searchQuery}
+						/>
+					</div>
+				</div>
+			</div>
+
+			<div
+				class="table-wrapper"
+				use:capDefaultHeight={{
+					trigger: displayPlayers.length,
+					// header (33.5px) + 12 full rows (51px each) — keeps the capped height from
+					// ever stopping mid-row.
+					maxHeight: 33.5 + 12 * 51,
+				}}
+			>
+				<Leaderboard
+					players={displayPlayers}
+					loading={!isViewingArchive && !livePlayersLoaded}
+					{searchQuery}
+					{showInactivePlayers}
+					hideOptions={isViewingArchive}
+					onPlayerUpdated={handlePlayerUpdated}
+					onPlayerDeleted={handlePlayerDeleted}
+				/>
+			</div>
+		</div>
+
+		{#if archives.length > 0}
+			<div class="archive-section">
+				<div class="section-label">{$_("pageHome.seasonArchive")}</div>
+				<div class="archive-buttons">
+					{#each [...archives].reverse() as archive (archive.id)}
+						<button
+							class="btn-common btn-sm"
+							onclick={() => loadArchive(archive.seasonName)}
+							>{archive.seasonName}</button
+						>
+					{/each}
+				</div>
+			</div>
+		{/if}
+	</div>
+</div>
+
+<style>
+	.main-content {
+		display: flex;
+		flex-direction: column;
+		gap: 22px;
+	}
+
+	.timer-card {
+		background: var(--surface);
+		border: 1px solid var(--border-soft);
+		border-left: 4px solid var(--gold);
+		border-radius: var(--r-lg);
+		padding: 14px 22px;
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+	}
+
+	.timer-info {
+		display: flex;
+		align-items: center;
+		gap: 12px;
+	}
+
+	.timer-icon {
+		flex-shrink: 0;
+		width: 34px;
+		height: 34px;
+		border-radius: 50%;
+		background: var(--gold-dim);
+		color: var(--gold);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+	}
+
+	.timer-label {
+		font-size: 16px;
+		font-weight: 700;
+		color: var(--text);
+	}
+
+	.timer-ended {
+		font-size: 16px;
+		font-weight: 800;
+		color: var(--danger);
+	}
+
+	.timer-segments {
+		display: flex;
+		align-items: baseline;
+		gap: 10px;
+	}
+
+	.timer-segment {
+		text-align: center;
+	}
+
+	.timer-value {
+		font-size: 22px;
+		font-weight: 800;
+		color: var(--text);
+		font-variant-numeric: tabular-nums;
+		line-height: 1;
+	}
+
+	.timer-value.gold {
+		color: var(--gold);
+	}
+
+	.timer-value.dim {
+		color: var(--text-muted);
+	}
+
+	.timer-unit {
+		font-size: 9px;
+		color: var(--text-dim);
+		margin-top: 3px;
+	}
+
+	.timer-colon {
+		font-size: 18px;
+		color: var(--border);
+		font-weight: 700;
+		padding-bottom: 11px;
+	}
+
+	.section-heading {
+		font-size: 16px;
+		color: var(--gold);
+		border: none;
+		padding: 0;
+		margin-bottom: 12px;
+	}
+
+	.leaderboard-card {
+		padding: 0;
+		gap: 0;
+	}
+
+	.leaderboard-card .search-container {
+		padding: 16px 20px;
+		margin: 0;
+	}
+
+	.leaderboard-card .search-container h2 {
+		font-size: 16px;
+	}
+
+	.leaderboard-card .table-wrapper {
+		border: none;
+		border-radius: 0 0 var(--r-lg) var(--r-lg);
+	}
+
+	.toolbar {
+		display: flex;
+		align-items: center;
+		gap: 16px;
+		flex-wrap: wrap;
+	}
+
+	.search-field {
+		position: relative;
+		width: 160px;
+	}
+
+	@media (max-width: 640px) {
+		.toolbar,
+		.search-field {
+			width: 100%;
+		}
+
+		.toolbar {
+			gap: 10px;
+		}
+	}
+
+	.search-field .search-input {
+		width: 100%;
+		padding-left: 28px;
+	}
+
+	.archive-section {
+		display: flex;
+		align-items: center;
+		gap: 12px;
+		flex-wrap: wrap;
+	}
+
+	.archive-buttons {
+		display: flex;
+		flex-direction: row;
+		flex-wrap: wrap;
+		gap: 8px;
+	}
+
+	.section-label {
+		font-size: 16px;
+		font-weight: 700;
+		color: var(--text-dim);
+	}
+
+	.filter-toggle {
+		display: flex;
+		align-items: center;
+		gap: 7px;
+		cursor: pointer;
+		font-size: 12px;
+		color: var(--text-muted);
+	}
+
+	.filter-toggle p {
+		white-space: nowrap;
+	}
+
+</style>

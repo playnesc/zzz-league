@@ -1,0 +1,547 @@
+<script lang="ts">
+	import { confirmDialog, notify } from "$lib/dialogs.svelte";
+	import { goto } from "$app/navigation";
+	import { resolve } from "$app/paths";
+	import { page } from "$app/state";
+	import SidePanel from "$lib/components/SidePanel.svelte";
+	import { getTournament, listPlayers, listRegistrations, splitTournament } from "$lib/backend";
+	import { _ } from "$lib/i18n";
+	import { getAuthSession } from "$lib/auth.svelte";
+	import type { Tournament } from "$lib/types";
+	import { isLocked } from "$lib/tournamentState";
+	import { onMount, untrack } from "svelte";
+
+	const session = getAuthSession();
+
+	const id = $derived(page.params.id!);
+
+	type PoolPlayer = { uid: string; name: string };
+
+	let loaded = $state(false);
+	let loadError = $state("");
+	let tournament = $state<Tournament>();
+
+	let approvedPlayers = $state<PoolPlayer[]>([]);
+	let divisionCount = $state(2);
+	let divisionSizes = $state<number[]>([2, 2]);
+	let groups = $state<string[][]>([[], []]);
+
+	let assignedUids = $derived(new Set(groups.flat()));
+	let pool = $derived(approvedPlayers.filter((p) => !assignedUids.has(p.uid)));
+
+	let maxDivisionCount = $derived(
+		Math.max(2, Math.floor(approvedPlayers.length / 2)),
+	);
+	let canSplit = $derived(loaded && approvedPlayers.length >= 4);
+
+	$effect(() => {
+		const n = Math.max(2, divisionCount || 0);
+		if (divisionSizes.length < n) {
+			divisionSizes = [
+				...divisionSizes,
+				...Array(n - divisionSizes.length).fill(2),
+			];
+			groups = [
+				...groups,
+				...Array.from({ length: n - groups.length }, () => []),
+			];
+		} else if (divisionSizes.length > n) {
+			divisionSizes = divisionSizes.slice(0, n);
+			groups = groups.slice(0, n);
+		}
+	});
+
+	$effect(() => {
+		const max = maxDivisionCount;
+		untrack(() => {
+			if (divisionCount > max) {
+				divisionCount = max;
+			}
+		});
+	});
+
+	function clampDivisionCount() {
+		if (!Number.isFinite(divisionCount) || divisionCount < 2) {
+			divisionCount = 2;
+		} else if (divisionCount > maxDivisionCount) {
+			divisionCount = maxDivisionCount;
+		}
+	}
+
+	function clampDivisionSize(i: number) {
+		if (!Number.isFinite(divisionSizes[i]) || divisionSizes[i] < 2) {
+			divisionSizes[i] = 2;
+		}
+	}
+
+	let validationError = $derived.by(() => {
+		if (!canSplit) {
+			return $_("pageTournamentSplit.errorNotEnoughApproved", {
+				values: { count: approvedPlayers.length },
+			});
+		}
+		if (!Number.isFinite(divisionCount) || divisionCount < 2) {
+			return $_("pageTournamentSplit.errorMinDivisions");
+		}
+		if (divisionCount > maxDivisionCount) {
+			return $_("pageTournamentSplit.errorTooManyDivisions", {
+				values: { max: maxDivisionCount, count: approvedPlayers.length },
+			});
+		}
+		const smallIndex = divisionSizes.findIndex(
+			(n) => !Number.isFinite(n) || n < 2,
+		);
+		if (smallIndex !== -1) {
+			return $_("pageTournamentSplit.errorDivisionMinPlayers", {
+				values: { division: smallIndex + 1 },
+			});
+		}
+		if (pool.length > 0) {
+			return $_("pageTournamentSplit.errorNotAllAssigned", {
+				values: { count: pool.length },
+			});
+		}
+		const mismatchIndex = groups.findIndex(
+			(g, i) => g.length !== divisionSizes[i],
+		);
+		if (mismatchIndex !== -1) {
+			return $_("pageTournamentSplit.errorDivisionMismatch", {
+				values: {
+					division: mismatchIndex + 1,
+					actual: groups[mismatchIndex].length,
+					expected: divisionSizes[mismatchIndex],
+				},
+			});
+		}
+		return null;
+	});
+
+	function shufflePlayers() {
+		const shuffled = [...approvedPlayers];
+		for (let i = shuffled.length - 1; i > 0; i--) {
+			const j = Math.floor(Math.random() * (i + 1));
+			[shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+		}
+
+		const next: string[][] = [];
+		let offset = 0;
+		for (const size of divisionSizes) {
+			next.push(shuffled.slice(offset, offset + size).map((p) => p.uid));
+			offset += size;
+		}
+		groups = next;
+	}
+
+	let draggedUid = $state<string | null>(null);
+
+	function handleDragStart(uid: string) {
+		draggedUid = uid;
+	}
+
+	function handleDragEnd() {
+		draggedUid = null;
+	}
+
+	function removeFromGroups(uid: string) {
+		return groups.map((g) => g.filter((u) => u !== uid));
+	}
+
+	function isDivisionFull(index: number) {
+		return groups[index].length >= divisionSizes[index];
+	}
+
+	function canDropOnDivision(index: number) {
+		if (!draggedUid) return false;
+		if (groups[index].includes(draggedUid)) return true;
+		return !isDivisionFull(index);
+	}
+
+	function moveToDivision(index: number) {
+		if (!canDropOnDivision(index)) return;
+		const uid = draggedUid!;
+		const next = removeFromGroups(uid);
+		next[index] = [...next[index], uid];
+		groups = next;
+		draggedUid = null;
+	}
+
+	// Keyboard / touch alternative to drag and drop: -1 moves back to the unassigned pool.
+	function moveTo(uid: string, target: number) {
+		const next = removeFromGroups(uid);
+		if (target >= 0) {
+			if (next[target].length >= divisionSizes[target]) return;
+			next[target] = [...next[target], uid];
+		}
+		groups = next;
+	}
+
+	function moveToPool() {
+		if (!draggedUid) return;
+		groups = removeFromGroups(draggedUid);
+		draggedUid = null;
+	}
+
+	onMount(async () => {
+		try {
+			const data = await getTournament(id);
+			if (!data) {
+				loadError = $_("pageTournamentSplit.notFound");
+				return;
+			}
+			if (isLocked(data.state) || data.challongeTournamentId) {
+				loadError = $_("pageTournamentSplit.splitUnavailableLocked");
+				return;
+			}
+			if (data.divisionGroupId) {
+				loadError = $_("pageTournamentSplit.alreadySplit");
+				return;
+			}
+			tournament = data;
+
+			const registrations = await listRegistrations(id);
+			const approvedUids = registrations
+				.filter((r) => r.approved && r.playerId)
+				.map((r) => r.playerId!);
+			const namesByUid = new Map(
+				(await listPlayers(approvedUids)).map((p) => [p.uid, p.name]),
+			);
+
+			approvedPlayers = approvedUids.map((uid) => ({
+				uid,
+				name: namesByUid.get(uid) ?? uid,
+			}));
+		} catch (e: any) {
+			loadError = e.message;
+		} finally {
+			loaded = true;
+		}
+	});
+
+	let status = $state("");
+	let isSplitting = $state(false);
+	async function handleSplit() {
+		if (isSplitting) return;
+		if (validationError) {
+			status = validationError;
+			return;
+		}
+		if (
+			!(await confirmDialog($_("pageTournamentSplit.confirmSplit", { values: { count: divisionCount } }), {
+					confirmLabel: $_("pageTournamentSplit.splitButton"),
+				}))
+		)
+			return;
+
+		isSplitting = true;
+		try {
+			await splitTournament(id, groups);
+			await goto(resolve(`/tournaments/${id}`));
+		} catch (e: any) {
+			status = e.message;
+		} finally {
+			isSplitting = false;
+		}
+	}
+</script>
+
+{#snippet mover(uid: string, name: string, current: number)}
+	<select
+		class="move-select"
+		aria-label={$_("pageTournamentSplit.moveToLabel", { values: { name } })}
+		value={String(current)}
+		onchange={(e) => moveTo(uid, Number(e.currentTarget.value))}
+	>
+		<option value="-1">{$_("pageTournamentSplit.unassignedOption")}</option>
+		{#each groups as _group, gi (gi)}
+			<option value={String(gi)} disabled={gi !== current && isDivisionFull(gi)}>
+				{$_("pageTournamentSplit.divisionHeading", { values: { index: gi + 1 } })}
+			</option>
+		{/each}
+	</select>
+{/snippet}
+
+<div class="layout">
+	<SidePanel></SidePanel>
+
+	<div class="card main-content">
+		{#if !session.ready}
+			<p class="notice">{$_("common.loading")}</p>
+		{:else if !session.isAdmin}
+			<p class="notice">{$_("pageTournamentSplit.noViewPermission")}</p>
+		{:else if !loaded}
+			<h2>{$_("pageTournamentSplit.pageTitle")}</h2>
+			<p class="notice">{$_("common.loading")}</p>
+		{:else if loadError}
+			<h2 class="page-title">{$_("pageTournamentSplit.pageTitle")}</h2>
+			<p class="notice">{loadError}</p>
+		{:else}
+			<h2 class="page-title">
+				{$_("pageTournamentSplit.splitHeading", { values: { name: tournament?.name } })}
+			</h2>
+
+			{#if !canSplit}
+				<p class="notice">
+					{$_("pageTournamentSplit.errorNotEnoughApproved", {
+						values: { count: approvedPlayers.length },
+					})}
+				</p>
+				<div class="form-actions">
+					<a class="btn-common" href={resolve(`/tournaments/${id}`)}
+						>{$_("common.back")}</a
+					>
+				</div>
+			{:else}
+				<div class="split-toolbar">
+					<div class="field-group">
+						<label for="division-count">{$_("pageTournamentSplit.divisionCountLabel")}</label>
+						<input
+							id="division-count"
+							class="count-field"
+							type="number"
+							min="2"
+							max={maxDivisionCount}
+							bind:value={divisionCount}
+							onblur={clampDivisionCount}
+						/>
+					</div>
+					<p class="hint">
+						{$_("pageTournamentSplit.maxDivisionsHint", { values: { max: maxDivisionCount } })}
+					</p>
+					<p class="hint">
+						{$_("pageTournamentSplit.assignedHint", {
+							values: {
+								assigned: approvedPlayers.length - pool.length,
+								total: approvedPlayers.length,
+							},
+						})}
+					</p>
+					<button class="btn-common shuffle-btn" onclick={shufflePlayers}>
+						<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+						{$_("pageTournamentSplit.shuffleButton")}
+					</button>
+				</div>
+
+				<div class="split-columns">
+					<!-- svelte-ignore a11y_no_static_element_interactions -->
+					<div
+						class="split-column pool-column"
+						ondragover={(e) => e.preventDefault()}
+						ondrop={moveToPool}
+					>
+						<h3>
+							{$_("pageTournamentSplit.unassignedHeading", { values: { count: pool.length } })}
+						</h3>
+						<div class="player-list">
+							{#each pool as player (player.uid)}
+								<!-- svelte-ignore a11y_no_static_element_interactions -->
+								<div
+									class="player-card"
+									draggable="true"
+									ondragstart={() => handleDragStart(player.uid)}
+									ondragend={handleDragEnd}
+								>
+									<span class="player-card-name">{player.name}</span>
+									{@render mover(player.uid, player.name, -1)}
+								</div>
+							{/each}
+						</div>
+					</div>
+
+					{#each groups as group, i}
+						<!-- svelte-ignore a11y_no_static_element_interactions -->
+						<div
+							class="split-column"
+							class:division-full={isDivisionFull(i)}
+							ondragover={(e) => {
+								if (canDropOnDivision(i)) e.preventDefault();
+							}}
+							ondrop={() => moveToDivision(i)}
+						>
+							<h3 class:division-full={isDivisionFull(i)}>
+								{$_("pageTournamentSplit.divisionHeading", { values: { index: i + 1 } })}
+							</h3>
+							<div class="field-group">
+								<label for="division-size-{i}">{$_("pageTournamentSplit.playersLabel")}</label>
+								<input
+									id="division-size-{i}"
+									class="size-field"
+									type="number"
+									min="2"
+									bind:value={divisionSizes[i]}
+									onblur={() => clampDivisionSize(i)}
+								/>
+							</div>
+							<p class="hint" class:division-full={isDivisionFull(i)}>
+								{$_("pageTournamentSplit.assignedHint", {
+									values: { assigned: group.length, total: divisionSizes[i] },
+								})}
+							</p>
+							<div class="player-list">
+								{#each group as uid (uid)}
+									{@const name = approvedPlayers.find((p) => p.uid === uid)?.name ?? uid}
+									<!-- svelte-ignore a11y_no_static_element_interactions -->
+									<div
+										class="player-card"
+										draggable="true"
+										ondragstart={() => handleDragStart(uid)}
+										ondragend={handleDragEnd}
+									>
+										<span class="player-card-name">{name}</span>
+										{@render mover(uid, name, i)}
+									</div>
+								{/each}
+							</div>
+						</div>
+					{/each}
+				</div>
+
+				<p class="hint">
+					{$_("pageTournamentSplit.dragHint")}
+				</p>
+
+				{#if status}<p class="status error">{status}</p>{/if}
+				<div class="form-actions">
+					<button
+						class="btn-common btn-play"
+						class:btn-loading={isSplitting}
+						onclick={handleSplit}>{$_("pageTournamentSplit.splitButton")}</button
+					>
+					<a class="btn-common" href={resolve(`/tournaments/${id}`)}
+						>{$_("common.cancel")}</a
+					>
+				</div>
+			{/if}
+		{/if}
+	</div>
+</div>
+
+<style>
+	.page-title {
+		font-size: 20px;
+		padding-bottom: 16px;
+	}
+
+	.field-group {
+		display: flex;
+		flex-direction: column;
+		gap: 6px;
+	}
+
+	.field-group label {
+		font-size: 12px;
+		color: var(--text-dim);
+		font-weight: 600;
+	}
+
+	.count-field {
+		width: 80px;
+	}
+
+	.size-field {
+		width: 60px;
+	}
+
+	.split-toolbar {
+		display: flex;
+		align-items: flex-end;
+		gap: 24px;
+		flex-wrap: wrap;
+	}
+
+	.shuffle-btn {
+		margin-left: auto;
+	}
+
+	.split-columns {
+		display: flex;
+		gap: 16px;
+		flex-wrap: wrap;
+		width: 100%;
+	}
+
+	.split-column {
+		flex: 1 1 200px;
+		min-width: 190px;
+		border: 1px solid var(--border-soft);
+		border-radius: var(--r-md);
+		padding: 12px;
+		display: flex;
+		flex-direction: column;
+		gap: 10px;
+	}
+
+	.split-column h3 {
+		font-size: 14px;
+		font-weight: 700;
+		color: var(--text-muted);
+		margin: 0;
+		border: none;
+		padding: 0;
+		display: block;
+	}
+
+	.division-full {
+		border-color: var(--success);
+	}
+
+	h3.division-full {
+		color: var(--success);
+	}
+
+	p.division-full {
+		color: var(--success);
+	}
+
+	.pool-column {
+		border-style: dashed;
+	}
+
+	.player-list {
+		display: flex;
+		flex-direction: column;
+		gap: 6px;
+		min-height: 40px;
+	}
+
+	.player-card {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 8px;
+		padding: 6px 6px 6px 10px;
+		border-radius: var(--r-sm);
+		background: var(--surface-2);
+		border: 1px solid var(--border-soft);
+		font-size: 12px;
+		font-weight: 500;
+		cursor: grab;
+	}
+
+	.player-card:active {
+		cursor: grabbing;
+	}
+
+	.player-card-name {
+		min-width: 0;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	.move-select {
+		width: auto;
+		max-width: 50%;
+		height: 28px;
+		padding: 0 6px;
+		font-size: var(--fs-xs);
+		flex-shrink: 0;
+		cursor: pointer;
+	}
+
+	.hint {
+		color: var(--text-dim);
+		font-size: 12px;
+		margin: 0;
+	}
+
+</style>
