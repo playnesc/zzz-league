@@ -14,6 +14,7 @@
 		listRegistrations,
 	} from "$lib/backend";
 	import TournamentMatchPopup from "$lib/components/TournamentMatchPopup.svelte";
+	import { modal } from "$lib/actions/modal";
 	import { getAuthSession } from "$lib/auth.svelte";
 	import type {
 		HistoryCursor,
@@ -109,12 +110,21 @@
 	let matchPopupMatch = $state<TournamentMatch>();
 	let matchPopupRegisteredPlayers = $state<RegisteredPlayer[]>([]);
 	let matchPopupTeamsById = $state<Map<string, Team>>(new Map());
-	let loadingMatchEntryId = $state<string | null>(null);
+	// The entry whose match is loading — while set, a placeholder card with a spinner stands in
+	// for the popup. Closing it bumps the token so the in-flight load is ignored when it lands.
+	let loadingMatchEntry = $state<HistoryEntry | null>(null);
+	let matchLoadToken = 0;
+
+	function cancelMatchLoad() {
+		matchLoadToken++;
+		loadingMatchEntry = null;
+	}
 
 	async function openMatchFromEntry(entry: HistoryEntry) {
-		if (!entry.tournamentId || !entry.tournamentMatchId || loadingMatchEntryId)
+		if (!entry.tournamentId || !entry.tournamentMatchId || loadingMatchEntry)
 			return;
-		loadingMatchEntryId = entry.id;
+		loadingMatchEntry = entry;
+		const myToken = ++matchLoadToken;
 		try {
 			const [tournament, matches, registrations] = await Promise.all([
 				getTournament(entry.tournamentId),
@@ -122,7 +132,7 @@
 				listRegistrations(entry.tournamentId),
 			]);
 			const match = matches.find((m) => m.id === entry.tournamentMatchId);
-			if (!tournament || !match) return;
+			if (myToken !== matchLoadToken || !tournament || !match) return;
 
 			const teamIds = registrations
 				.map((r) => r.teamId)
@@ -142,6 +152,7 @@
 				return team ? [team.creator.uid, team.player2.uid] : [];
 			});
 			const players = await listPlayers([...new Set([...soloUids, ...teamUids])]);
+			if (myToken !== matchLoadToken) return;
 
 			matchPopupRegisteredPlayers = registrations
 				.map((registration) => {
@@ -156,9 +167,9 @@
 			matchPopupMatch = match;
 			matchPopupOpen = true;
 		} catch (error) {
-			notify(error);
+			if (myToken === matchLoadToken) notify(error);
 		} finally {
-			loadingMatchEntryId = null;
+			if (myToken === matchLoadToken) loadingMatchEntry = null;
 		}
 	}
 
@@ -231,7 +242,6 @@
 		<div
 			class="h-item {viewerId ? changeClass(leftChange) : ''}"
 			class:clickable={canOpenMatch}
-			class:btn-loading={loadingMatchEntryId === entry.id}
 		>
 			{#if canOpenMatch}
 				<!-- the whole row opens the match; names and links sit above this as their own controls -->
@@ -319,6 +329,22 @@
 	</div>
 {/if}
 
+{#if loadingMatchEntry}
+	<div class="popup">
+		<div class="card match-loading-card" use:modal={{ onclose: cancelMatchLoad, label: $_("common.loading") }}>
+			<div class="close-row">
+				<button class="icon-btn" onclick={cancelMatchLoad} aria-label={$_("common.close")}>
+					<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+				</button>
+			</div>
+			{#if loadingMatchEntry.tournamentName}
+				<div class="match-loading-label">{loadingMatchEntry.tournamentName}</div>
+			{/if}
+			<div class="spinner" role="status" aria-label={$_("common.loading")}></div>
+		</div>
+	</div>
+{/if}
+
 {#if matchPopupOpen}
 	<TournamentMatchPopup
 		bind:open={matchPopupOpen}
@@ -331,7 +357,6 @@
 
 <style>
 	.h-item {
-		--btn-fg: var(--text);
 		position: relative;
 		display: flex;
 		align-items: center;
@@ -526,6 +551,40 @@
 	.h-icon-btn.danger:hover {
 		color: var(--danger);
 		background: var(--danger-dim);
+	}
+
+	/* stands in for TournamentMatchPopup's card (same width) while its data loads */
+	.match-loading-card {
+		width: 420px;
+		max-width: 90vw;
+		padding: 16px 22px 32px;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 16px;
+	}
+
+	.match-loading-card .close-row {
+		align-self: stretch;
+	}
+
+	.match-loading-label {
+		max-width: 100%;
+		font-size: 11px;
+		font-weight: 700;
+		color: var(--text-dim);
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	.spinner {
+		width: 32px;
+		height: 32px;
+		border: 3px solid var(--border);
+		border-top-color: var(--gold);
+		border-radius: 50%;
+		animation: btn-spin 0.7s linear infinite;
 	}
 
 	.legacy-divider {
