@@ -266,7 +266,10 @@
 				{#if entry.kind === "tech_loss"}
 					<span class="h-score techloss">{$_("historyList.techLoss")}</span>
 				{:else if entry.resultP1 && entry.resultP2}
-					<span class="h-score">{leftResult}–{rightResult}</span>
+					<!-- winner/loser colouring follows the Elo change, so it works for both scores (higher wins) and timers (lower wins) -->
+					<span class="h-score"
+						><span class={changeClass(leftChange)}>{leftResult}</span> – <span class={changeClass(rightChange ?? 0)}>{rightResult}</span></span
+					>
 				{/if}
 			</div>
 			<div class="h-meta">
@@ -468,13 +471,21 @@
 		white-space: nowrap;
 	}
 
+	.h-score .gain {
+		color: var(--success);
+	}
+
+	.h-score .loss {
+		color: var(--danger);
+	}
+
 	.h-score.techloss {
 		color: var(--danger);
 	}
 
 	.h-tournament {
 		font-size: 12px;
-		color: var(--text-dim);
+		color: var(--gold);
 		overflow: hidden;
 		text-overflow: ellipsis;
 		white-space: nowrap;
