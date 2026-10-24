@@ -108,7 +108,8 @@
 			}
 
 			const cls = ["row"];
-			if (done) cls.push(winnerKey(m) === key ? "win" : "lose");
+			// The tech-loss side lost too, but is shown apart from a regular loss.
+			if (done) cls.push(winnerKey(m) === key ? "win" : techLossKey(m) === key ? "techloss" : "lose");
 			if (key === selfKey) cls.push("self");
 			if (key === active) cls.push("hl");
 			const result = slot === 1 ? m.resultP1 : m.resultP2;
@@ -125,9 +126,9 @@
 		return isMine(m) ? "match-card mine" : "match-card open";
 	}
 
+	// Label above an open card. The viewer's own match needs none — its blue outline says it.
 	function tag(m: TournamentMatch): { text: string; cls: string } | null {
-		if (!playable(m)) return null;
-		if (isMine(m)) return { text: $_("bracket.yourMatch"), cls: "tag info" };
+		if (!playable(m) || isMine(m)) return null;
 		if (m.p1ApprovedResult !== m.p2ApprovedResult) return { text: $_("bracket.halfConfirmed"), cls: "tag gold" };
 		return null;
 	}
@@ -205,6 +206,7 @@
 	function mobileStatus(m: TournamentMatch) {
 		if (m.state === "complete") return $_("bracket.statusComplete");
 		if (m.state === "pending" || !started) return $_("bracket.statusWaiting");
+		if (isMine(m)) return $_("bracket.yourMatch");
 		return tag(m)?.text ?? $_("bracket.legendOpen");
 	}
 
@@ -412,33 +414,29 @@
 		</div>
 	{/if}
 {:else if bracketMatches.length > 0}
-	<div class="toolbar">
-		<div class="legend">
-			<span class="legend-item"><span class="swatch swatch-open"></span>{$_("bracket.legendOpen")}</span>
-			{#if selfKey}<span class="legend-item"><span class="swatch swatch-mine"></span>{$_("bracket.yourMatch")}</span>{/if}
-			<span class="legend-item"><span class="dot"></span>{$_("bracket.legendWinner")}</span>
-			<span class="legend-hint">{$_("bracket.hoverHint")}</span>
+	{#if selfKey || editable}
+		<div class="toolbar">
+			<div class="toolbar-actions">
+				{#if selfKey}
+					<label class="toggle">
+						<span class="cb-wrap">
+							<input type="checkbox" class="cb-input" bind:checked={highlightSelf} />
+							{#if highlightSelf}
+								<svg class="cb-check" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
+							{/if}
+						</span>
+						<span>{$_("bracket.highlightMyPath")}</span>
+					</label>
+				{/if}
+				{#if editable}
+					<button type="button" class="btn-common btn-sm" onclick={startEditing}>
+						<svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"></path></svg>
+						{$_("bracket.editLayout")}
+					</button>
+				{/if}
+			</div>
 		</div>
-		<div class="toolbar-actions">
-			{#if selfKey}
-				<label class="toggle">
-					<span class="cb-wrap">
-						<input type="checkbox" class="cb-input" bind:checked={highlightSelf} />
-						{#if highlightSelf}
-							<svg class="cb-check" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
-						{/if}
-					</span>
-					<span>{$_("bracket.highlightMyPath")}</span>
-				</label>
-			{/if}
-			{#if editable}
-				<button type="button" class="btn-common btn-sm" onclick={startEditing}>
-					<svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"></path></svg>
-					{$_("bracket.editLayout")}
-				</button>
-			{/if}
-		</div>
-	</div>
+	{/if}
 
 	{@const h = panelHeights(layout.height)}
 	<div
@@ -543,45 +541,8 @@
 		display: flex;
 		flex-wrap: wrap;
 		align-items: center;
-		justify-content: space-between;
+		justify-content: flex-end;
 		gap: 10px 20px;
-	}
-
-	.legend {
-		display: flex;
-		flex-wrap: wrap;
-		align-items: center;
-		gap: 8px 16px;
-		font-size: var(--fs-sm);
-		color: var(--text-muted);
-	}
-
-	.legend-item {
-		display: flex;
-		align-items: center;
-		gap: 6px;
-	}
-
-	.legend-hint {
-		color: var(--text-dim);
-	}
-
-	.swatch {
-		width: 14px;
-		height: 10px;
-		border-radius: 3px;
-		border: 1.5px solid var(--gold-border);
-	}
-
-	.swatch-mine {
-		border-color: var(--info);
-	}
-
-	.dot {
-		width: 8px;
-		height: 8px;
-		border-radius: 50%;
-		background: var(--success);
 	}
 
 	.toolbar-actions {
@@ -676,10 +637,6 @@
 
 	.tag.gold {
 		color: var(--gold);
-	}
-
-	.tag.info {
-		color: var(--info);
 	}
 
 	.tag-dot {
@@ -780,20 +737,29 @@
 		color: var(--text-dim);
 	}
 
+	.row.self .name {
+		color: var(--info);
+	}
+
+	/* A finished match colors both the name and the result — after .self, so the result shows
+	   on the viewer's own finished matches too. */
 	.row.win .name {
 		font-weight: 700;
 	}
 
+	.row.win .name,
 	.row.win .score {
 		color: var(--success);
 	}
 
-	.row.lose .name {
-		color: var(--text-muted);
+	.row.lose .name,
+	.row.lose .score {
+		color: var(--danger);
 	}
 
-	.row.self .name {
-		color: var(--info);
+	.row.techloss .name,
+	.row.techloss .score {
+		color: var(--text-dim);
 	}
 
 	.row.tbd .name {
@@ -816,10 +782,6 @@
 
 		.mobile {
 			display: flex;
-		}
-
-		.legend-hint {
-			display: none;
 		}
 	}
 

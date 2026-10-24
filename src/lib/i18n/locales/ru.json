@@ -567,7 +567,8 @@
 		"showOnlyMyMatchesLabel": "Показать только мои матчи",
 		"searchPlaceholder": "Поиск…",
 		"noMatchesFound": "Матчи не найдены",
-		"participantsHeading": "Участники"
+		"participantsHeading": "Участники",
+		"techLossLabel": "Техлуз"
 	},
 	"bracket": {
 		"winnersRound": "Верхняя · Раунд {n}",
@@ -584,8 +585,6 @@
 		"yourMatch": "Ваш матч",
 		"halfConfirmed": "1/2 подтверждено",
 		"legendOpen": "Открыт",
-		"legendWinner": "Победитель",
-		"hoverHint": "Наведите на игрока, чтобы увидеть его путь",
 		"highlightMyPath": "Подсветить мой путь",
 		"openMatch": "Открыть матч {n}",
 		"techLoss": "ТП",

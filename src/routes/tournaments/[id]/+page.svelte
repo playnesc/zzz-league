@@ -213,7 +213,15 @@
 					return false;
 			}
 			return true;
-		}),
+		})
+			// Unfinished before finished; within each, the viewer's own matches first; then play
+			// order (M1, M2…). Matches from Challonge-era tournaments have no number and keep the
+			// server's order (sort is stable).
+			.sort((a, b) =>
+				Number(a.state === "complete") - Number(b.state === "complete") ||
+				Number(!isMyMatch(a)) - Number(!isMyMatch(b)) ||
+				(a.number ?? Infinity) - (b.number ?? Infinity),
+			),
 	);
 
 	let canView = $derived(tournament?.visible !== false || session.isModerator);
@@ -403,6 +411,11 @@
 	}
 
 	let myEntrantKey = $derived(myRegistration ? (myRegistration.teamId ?? myRegistration.playerId) : null);
+
+	function isMyMatch(m: TournamentMatch) {
+		if (!myEntrantKey) return false;
+		return [m.p1, m.p2, m.p1TeamId, m.p2TeamId].includes(myEntrantKey);
+	}
 
 	// Mirrors the server's prize Elo (TournamentLifecycleService.ApplyPrizeEloBonusAsync).
 	function prizeElo(rank: number) {
@@ -945,7 +958,7 @@
 								!!match.resultP2}
 							{@const p1Avatar = getMatchSideAvatarSrc(match.p1, match.p1TeamId)}
 							{@const p2Avatar = getMatchSideAvatarSrc(match.p2, match.p2TeamId)}
-							<div class="match-item">
+							<div class="match-item" class:match-item-mine={isMyMatch(match)}>
 								<button
 									type="button"
 									class="match-open"
@@ -981,7 +994,10 @@
 										)}</button
 									>
 								</div>
-								{#if hasResult}
+								{#if match.techLossUid || match.techLossTeamId}
+									<!-- A tech loss decides the match whatever was typed, so it replaces the score. -->
+									<span class="match-vs">{$_("pageTournamentDetail.techLossLabel")}</span>
+								{:else if hasResult}
 									<span class="match-score-pair">
 										<span class="match-score {p1Class === 'match-winner' ? 'match-score-win' : ''}"
 											>{match.resultP1}</span
@@ -1037,9 +1053,9 @@
 				class="table-wrapper"
 				use:capDefaultHeight={{
 					trigger: tournament.registrationType === "team" ? registeredTeamRegistrations.length : registeredPlayers.length,
-					// header (33.5px) + 12 full rows (51px each) — keeps the capped height from
-					// ever stopping mid-row (matches the leaderboard's table-wrapper sizing).
-					maxHeight: 33.5 + 12 * 51,
+					// header (34.5px) + 12 full rows (52px each, see the tables' row height) — keeps the capped height from
+					// ever stopping mid-row.
+					maxHeight: 34.5 + 12 * 52,
 					storageKey: `tournament-table-height-${id}`,
 				}}
 			>
@@ -1206,6 +1222,15 @@
 
 	.match-item:hover {
 		border-color: var(--gold-border);
+	}
+
+	/* The viewer's own matches, outlined in blue like their match in the bracket. */
+	.match-item.match-item-mine {
+		border-color: color-mix(in oklch, var(--info) 80%, transparent);
+	}
+
+	.match-item.match-item-mine:hover {
+		border-color: var(--info);
 	}
 
 	.match-open {
