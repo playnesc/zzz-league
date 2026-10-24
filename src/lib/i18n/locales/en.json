@@ -591,15 +591,12 @@
 		"techLoss": "TL",
 		"editLayout": "Edit layout",
 		"editingTitle": "Editing layout",
-		"editingHint": "Click a slot, then another to swap them. Byes are slots too. The layout locks when the tournament starts.",
+		"editingHint": "Drag a player onto another player to swap them, or click two players. A player shown directly in a later round has a bye — swap someone onto that spot to give them the bye instead. The rest of the bracket updates as you go; the layout locks when the tournament starts.",
 		"unsavedChanges": "Unsaved changes",
 		"randomize": "Randomize",
 		"cancel": "Cancel",
 		"saveLayout": "Save layout",
-		"bye": "BYE",
 		"byePairError": "Two byes can't face each other in round 1 — pick a different slot.",
-		"slotLabel": "Slot {n}: {name}",
-		"roundOneSlots": "Round 1 · slots",
 		"tabWinners": "Winners",
 		"tabLosers": "Losers",
 		"tabGrandFinal": "Grand final",
@@ -615,7 +612,8 @@
 		"finalStandings": "Final standings",
 		"prizeElo": "+{n} Elo",
 		"confirmReset": "Reset and save",
-		"confirmResetMessage": "Changing the winner resets matches that were already played after this one: {matches}. Their results and Elo will be undone."
+		"confirmResetMessage": "Changing the winner resets matches that were already played after this one: {matches}. Their results and Elo will be undone.",
+		"moveEntrant": "Move {name}"
 	},
 	"pageTournamentSplit": {
 		"moveToLabel": "Move {name} to",

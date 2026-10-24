@@ -9,10 +9,12 @@ export function capDefaultHeight(node: HTMLElement, params: Params = {}) {
 	let userResized = false;
 	let currentStorageKey = params.storageKey;
 
+	// The rendered height, not style.height: dragging the grip past a min/max-height leaves
+	// style.height at the raw drag value while the element stays clamped.
 	function saveHeight() {
 		if (!currentStorageKey) return;
 		try {
-			localStorage.setItem(currentStorageKey, node.style.height);
+			localStorage.setItem(currentStorageKey, `${Math.round(node.getBoundingClientRect().height)}px`);
 		} catch {
 			// localStorage unavailable — ignore
 		}

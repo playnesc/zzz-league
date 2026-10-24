@@ -1,5 +1,7 @@
 <script lang="ts">
 	import { _ } from "$lib/i18n";
+	import { dragScroll } from "$lib/actions/dragScroll";
+	import { capDefaultHeight } from "$lib/actions/capDefaultHeight";
 	import type { Bracket } from "$lib/backend";
 	import type { TournamentMatch } from "$lib/types";
 	import {
@@ -26,6 +28,8 @@
 		editable = false,
 		editing = $bindable(false),
 		onSaveLayout,
+		onPreviewLayout,
+		heightStorageKey,
 	}: {
 		matches: TournamentMatch[];
 		bracket: Bracket;
@@ -37,7 +41,22 @@
 		editable?: boolean;
 		editing?: boolean;
 		onSaveLayout?: (slots: (string | null)[]) => Promise<void>;
+		// The bracket a draft layout would generate (unsaved) — redrawn after every swap.
+		onPreviewLayout?: (slots: (string | null)[]) => Promise<TournamentMatch[]>;
+		// Where the panel's resized height is remembered (per tournament).
+		heightStorageKey?: string;
 	} = $props();
+
+	// The panel opens at the height the Challonge embed had (600px) and can be resized between that
+	// and the bracket's full height (at most 2000px, the embed's cap) — never into empty space. A
+	// bracket shorter than 600px just takes its own height. The extra 56px covers the panel's padding
+	// and border plus room for a horizontal scrollbar.
+	const DEFAULT_HEIGHT = 600;
+	const MAX_HEIGHT = 2000;
+	function panelHeights(contentHeight: number) {
+		const full = Math.min(contentHeight + 56, MAX_HEIGHT);
+		return { min: Math.min(DEFAULT_HEIGHT, full), max: full };
+	}
 
 	const sideKey = (m: TournamentMatch, slot: 1 | 2) => (slot === 1 ? (m.p1 ?? m.p1TeamId) : (m.p2 ?? m.p2TeamId));
 	const winnerKey = (m: TournamentMatch) => m.winnerId ?? m.winnerTeamId;
@@ -76,12 +95,12 @@
 		cls: string;
 	}
 
-	function rows(m: TournamentMatch): Row[] {
+	function rows(m: TournamentMatch, feederMap = feeders): Row[] {
 		const done = m.state === "complete";
 		return ([1, 2] as const).map((slot) => {
 			const key = sideKey(m, slot);
 			if (!key) {
-				const feeder = feeders.get(m.id)?.[slot];
+				const feeder = feederMap.get(m.id)?.[slot];
 				const label = feeder
 					? $_(feeder.kind === "winner" ? "bracket.winnerOf" : "bracket.loserOf", { values: { n: feeder.number } })
 					: "—";
@@ -190,50 +209,115 @@
 	}
 
 	// ---- admin layout editing ----
+	// The editor is the bracket itself: every player the layout places (in a first-round match, or
+	// straight into a later round thanks to a bye) can be dragged onto another one, or two can be
+	// clicked (touch, keyboard), to swap their slots — so whoever should play the extra first-round
+	// match instead of getting the bye just trades places. Byes themselves stay where they are.
+	// After each swap the server generates the bracket for the draft (onPreviewLayout), so the
+	// view always shows what Save will produce.
 	let draft = $state<(string | null)[]>([]);
-	let selectedSlot = $state<number | null>(null);
+	let preview = $state<TournamentMatch[]>([]);
+	let previewSeq = 0;
+	let selectedKey = $state<string | null>(null);
+	let dragFrom = $state<string | null>(null);
+	let dragOver = $state<string | null>(null);
 	let editError = $state("");
 	let saving = $state(false);
 	let dirty = $derived(editing && draft.join() !== bracket.slots.join());
+	let editLayout = $derived(editing ? layoutBracket(preview, bracket.size, bracket.format) : null);
+	let previewFeeders = $derived(feedersOf(preview));
 
 	function startEditing() {
 		draft = [...bracket.slots];
-		selectedSlot = null;
+		preview = bracketMatches;
+		selectedKey = null;
 		editError = "";
 		editing = true;
 	}
 
 	function cancelEditing() {
 		editing = false;
-		selectedSlot = null;
+		selectedKey = null;
 		editError = "";
 	}
 
-	function pickSlot(i: number) {
-		if (selectedSlot === null) {
-			selectedSlot = i;
-			editError = "";
-			return;
+	async function refreshPreview() {
+		if (!onPreviewLayout) return;
+		const seq = ++previewSeq;
+		try {
+			const next = await onPreviewLayout(draft);
+			if (seq === previewSeq) preview = next;
+		} catch (error) {
+			if (seq === previewSeq) editError = error instanceof Error ? error.message : String(error);
 		}
-		if (selectedSlot === i) {
-			selectedSlot = null;
-			return;
-		}
-		const next = [...draft];
-		[next[selectedSlot], next[i]] = [next[i], next[selectedSlot]];
-		selectedSlot = null;
+	}
+
+	function applyDraft(next: (string | null)[]) {
 		if (hasByePair(next)) {
 			editError = $_("bracket.byePairError");
 			return;
 		}
 		editError = "";
 		draft = next;
+		refreshPreview();
+	}
+
+	function swap(a: string, b: string) {
+		const next = [...draft];
+		const ia = next.indexOf(a);
+		const ib = next.indexOf(b);
+		if (ia < 0 || ib < 0) return;
+		[next[ia], next[ib]] = [next[ib], next[ia]];
+		applyDraft(next);
+	}
+
+	function pick(key: string) {
+		if (selectedKey === null) {
+			selectedKey = key;
+			editError = "";
+			return;
+		}
+		const first = selectedKey;
+		selectedKey = null;
+		if (first !== key) swap(first, key);
+	}
+
+	function onPickKey(e: KeyboardEvent, key: string) {
+		if (e.key !== "Enter" && e.key !== " ") return;
+		e.preventDefault();
+		pick(key);
+	}
+
+	function onDragStart(e: DragEvent, key: string) {
+		dragFrom = key;
+		selectedKey = null;
+		e.dataTransfer?.setData("text/plain", key);
+		if (e.dataTransfer) e.dataTransfer.effectAllowed = "move";
+	}
+
+	function onDragOver(e: DragEvent, key: string) {
+		if (dragFrom === null) return;
+		e.preventDefault();
+		if (e.dataTransfer) e.dataTransfer.dropEffect = "move";
+		dragOver = key;
+	}
+
+	function onDrop(e: DragEvent, key: string) {
+		e.preventDefault();
+		const from = dragFrom;
+		dragFrom = null;
+		dragOver = null;
+		if (from !== null && from !== key) swap(from, key);
+	}
+
+	function onDragEnd() {
+		dragFrom = null;
+		dragOver = null;
 	}
 
 	function randomize() {
-		draft = shuffleLayout(draft);
-		selectedSlot = null;
-		editError = "";
+		selectedKey = null;
+		applyDraft(shuffleLayout(draft));
 	}
 
 	async function save() {
@@ -246,10 +330,6 @@
 			saving = false;
 		}
 	}
-
-	let pairs = $derived(
-		Array.from({ length: draft.length / 2 }, (_, p) => [2 * p, 2 * p + 1]),
-	);
 </script>
 
 {#if editing}
@@ -272,32 +352,65 @@
 	</div>
 	{#if editError}<p class="edit-error">{editError}</p>{/if}
 
-	<div class="well">
-		<span class="slots-label">{$_("bracket.roundOneSlots")}</span>
-		<div class="pairs">
-			{#each pairs as pair (pair[0])}
-				<div class="pair">
-					{#each pair as i (i)}
-						{@const key = draft[i]}
-						{@const name = key ? (labelFor(key) ?? "…") : $_("bracket.bye")}
-						<button
-							type="button"
-							class="slot"
-							class:bye={!key}
-							class:selected={selectedSlot === i}
-							class:target={selectedSlot !== null && selectedSlot !== i}
-							aria-pressed={selectedSlot === i}
-							aria-label={$_("bracket.slotLabel", { values: { n: i + 1, name } })}
-							onclick={() => pickSlot(i)}
-						>
-							<span class="slot-number">{i + 1}</span>
-							<span class="name">{name}</span>
-						</button>
+	{#if editLayout}
+		{@const h = panelHeights(editLayout.height)}
+		<div
+			class="well pannable sized"
+			class:resizable={h.max > h.min}
+			style="min-height: {h.min}px; max-height: {h.max}px"
+			use:dragScroll
+			use:capDefaultHeight={{ defaultHeight: DEFAULT_HEIGHT, maxHeight: h.max, storageKey: heightStorageKey }}
+		>
+			<div class="canvas" style="width: {editLayout.width}px; height: {editLayout.height}px">
+				<svg class="lines" width={editLayout.width} height={editLayout.height} aria-hidden="true">
+					{#each editLayout.connectors as c (c.from.id)}
+						<path d={c.d} />
 					{/each}
-				</div>
-			{/each}
+				</svg>
+				{#if editLayout.divider}
+					<div class="divider" style="top: {editLayout.divider.y}px; width: {editLayout.divider.width}px"></div>
+				{/if}
+				{#each editLayout.labels as label (`${label.x}:${label.y}`)}
+					<span class="column-label" style="left: {label.x}px; top: {label.y}px">{roundLabel(label.round)}</span>
+				{/each}
+				{#each editLayout.placed as p (p.match.id)}
+					<div class="match-card" style="left: {p.x}px; top: {p.y}px; width: {CARD_W}px; height: {CARD_H}px">
+						<span class="num">{p.match.number}</span>
+						<span class="rows">
+							{#each rows(p.match, previewFeeders) as row, i (i)}
+								{#if row.key}
+									{@const key = row.key}
+									<div
+										class="row slot-row"
+										class:selected={selectedKey === key}
+										class:drop-target={dragOver === key && dragFrom !== key}
+										class:dragging={dragFrom === key}
+										role="button"
+										tabindex="0"
+										draggable="true"
+										aria-pressed={selectedKey === key}
+										aria-label={$_("bracket.moveEntrant", { values: { name: row.label } })}
+										onclick={() => pick(key)}
+										onkeydown={(e) => onPickKey(e, key)}
+										ondragstart={(e) => onDragStart(e, key)}
+										ondragover={(e) => onDragOver(e, key)}
+										ondragleave={() => dragOver === key && (dragOver = null)}
+										ondrop={(e) => onDrop(e, key)}
+										ondragend={onDragEnd}
+									>
+										<svg class="grip" aria-hidden="true" width="8" height="12" viewBox="0 0 8 12" fill="currentColor"><circle cx="2" cy="2" r="1.2" /><circle cx="6" cy="2" r="1.2" /><circle cx="2" cy="6" r="1.2" /><circle cx="6" cy="6" r="1.2" /><circle cx="2" cy="10" r="1.2" /><circle cx="6" cy="10" r="1.2" /></svg>
+										<span class="name">{row.label}</span>
+									</div>
+								{:else}
+									<span class={row.cls}><span class="name">{row.label}</span></span>
+								{/if}
+							{/each}
+						</span>
+					</div>
+				{/each}
+			</div>
 		</div>
-	</div>
+	{/if}
 {:else if bracketMatches.length > 0}
 	<div class="toolbar">
 		<div class="legend">
@@ -327,7 +440,14 @@
 		</div>
 	</div>
 
-	<div class="well desktop">
+	{@const h = panelHeights(layout.height)}
+	<div
+		class="well desktop pannable sized"
+		class:resizable={h.max > h.min}
+		style="min-height: {h.min}px; max-height: {h.max}px"
+		use:dragScroll
+		use:capDefaultHeight={{ defaultHeight: DEFAULT_HEIGHT, maxHeight: h.max, storageKey: heightStorageKey }}
+	>
 		<div class="canvas" style="width: {layout.width}px; height: {layout.height}px">
 			<svg class="lines" width={layout.width} height={layout.height} aria-hidden="true">
 				{#each layout.connectors as c (c.from.id)}
@@ -490,6 +610,26 @@
 
 	.canvas {
 		position: relative;
+	}
+
+	.sized {
+		overflow: auto;
+	}
+
+	.resizable {
+		resize: vertical;
+	}
+
+	/* Grab-and-drag panning (see dragScroll): the hand shows over the empty canvas, and while a
+	   pan is under way it overrides every card's own cursor and stops text getting selected. */
+	.pannable {
+		cursor: grab;
+	}
+
+	.pannable:global(.panning),
+	.pannable:global(.panning) * {
+		cursor: grabbing !important;
+		user-select: none;
 	}
 
 	.lines {
@@ -875,74 +1015,32 @@
 		color: var(--danger);
 	}
 
-	.slots-label {
-		display: block;
-		margin-bottom: 10px;
-		font-size: var(--fs-xs);
-		font-weight: 700;
-		color: var(--text-dim);
+	.slot-row {
+		cursor: grab;
+		user-select: none;
 	}
 
-	.pairs {
-		display: grid;
-		grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-		gap: 12px;
-	}
-
-	.pair {
-		display: flex;
-		flex-direction: column;
-		border-radius: var(--r-md);
-		border: 1px dashed var(--gold-border);
-		background: var(--surface-2);
-		overflow: hidden;
-	}
-
-	.slot {
-		display: flex;
-		align-items: center;
-		gap: 10px;
-		min-height: 44px;
-		padding: 0 12px;
-		border: none;
-		background: transparent;
-		font: inherit;
-		color: var(--text);
-		text-align: left;
-		cursor: pointer;
-	}
-
-	.slot + .slot {
-		border-top: 1px solid var(--surface-hover);
-	}
-
-	.slot:hover {
+	.slot-row:hover {
 		background: var(--surface-hover);
 	}
 
-	.slot.target:hover {
-		background: var(--gold-dim);
+	.slot-row.dragging {
+		opacity: 0.4;
 	}
 
-	.slot.selected,
-	.slot.selected:hover {
+	.slot-row.drop-target {
+		background: var(--gold-dim);
+		box-shadow: inset 0 0 0 1.5px var(--gold-border);
+	}
+
+	.slot-row.selected,
+	.slot-row.selected:hover {
 		background: color-mix(in oklch, var(--gold) 18%, transparent);
 		box-shadow: inset 0 0 0 1.5px var(--gold);
 	}
 
-	.slot.bye .name {
-		color: var(--text-dim);
-		font-style: italic;
-		font-weight: 500;
-		letter-spacing: 0.04em;
-	}
-
-	.slot-number {
-		width: 16px;
+	.grip {
 		flex-shrink: 0;
-		font-size: 10px;
-		font-weight: 700;
 		color: var(--text-dim);
-		font-variant-numeric: tabular-nums;
 	}
 </style>

@@ -1,16 +1,16 @@
 // Pure layout math for Bracket.svelte: where each match card goes, the connector lines between
-// them, and how matches group into rounds. Positions come from each match's place in the full
-// power-of-two tree (round/position, as generated server-side before byes were removed), so a
-// bye simply leaves a gap and the entrant it passed through appears in the next round.
+// them, and how matches group into rounds. Columns are rounds; rows are packed compactly (see
+// compactCenters), so matches removed by byes leave no holes — the entrant a bye passed through
+// simply appears in the next round.
 import type { BracketSection, TournamentMatch } from './types';
 
 // Sized so an 8-player double elimination (5 columns) fits the tournament page at 1440px.
 export const CARD_W = 168;
 export const CARD_H = 60;
 const COL = CARD_W + 32;
-const UNIT = CARD_H + 16; // vertical pitch of two round-1 matches
+const UNIT = CARD_H + 16; // row pitch: one card plus a 16px gap
 const LABEL_H = 28;
-const SECTION_GAP = 56;
+const SECTION_GAP = 40;
 
 export type RoundKind =
 	| { kind: 'winners'; round: number; isFinal: boolean; isSemi: boolean; double: boolean }
@@ -48,14 +48,46 @@ export const isDouble = (format: string) => format === 'double elimination';
 
 const log2 = (n: number) => Math.round(Math.log2(n));
 
-// Center of a match in a round whose matches are `spread` round-1 pitches apart.
-const center = (position: number, spread: number) => ((position + 0.5) * spread - 0.5) * UNIT + CARD_H / 2;
+// Compact vertical placement for one bracket section: walking each tree from its final, a match
+// nobody feeds (within the section) takes the next free row — rows are one card plus a 16px gap
+// apart — and every other match is centered on the matches feeding it (lined up with its only
+// feeder when the other side came through a bye). Unlike tree positions this leaves no holes
+// where byes removed matches. Returns centers relative to the section's top, and the height.
+function compactCenters(matches: TournamentMatch[], section: 'winners' | 'losers') {
+	const inSection = matches.filter((m) => m.section === section);
+	const ids = new Set(inSection.map((m) => m.id));
+	const feeders = new Map<string, TournamentMatch[]>();
+	for (const m of inSection) {
+		if (!m.winnerToMatchId || !ids.has(m.winnerToMatchId)) continue;
+		const list = feeders.get(m.winnerToMatchId) ?? [];
+		list[m.winnerToSlot! - 1] = m;
+		feeders.set(m.winnerToMatchId, list);
+	}
+
+	const centers = new Map<string, number>();
+	let rows = 0;
+	const place = (m: TournamentMatch): number => {
+		const kids = (feeders.get(m.id) ?? []).filter(Boolean);
+		const c = kids.length
+			? kids.map(place).reduce((a, b) => a + b, 0) / kids.length
+			: rows++ * UNIT + CARD_H / 2;
+		centers.set(m.id, c);
+		return c;
+	};
+	inSection
+		.filter((m) => !m.winnerToMatchId || !ids.has(m.winnerToMatchId))
+		.sort((a, b) => a.position! - b.position!)
+		.forEach(place);
+
+	return { centers, height: rows ? (rows - 1) * UNIT + CARD_H : 0 };
+}
 
 export function layoutBracket(matches: TournamentMatch[], size: number, format: string): BracketLayout {
 	const k = log2(size);
 	const double = isDouble(format);
 	const losersRounds = double ? 2 * (k - 1) : 0;
-	const winnersHeight = (size / 2 - 1) * UNIT + CARD_H;
+	const winners = compactCenters(matches, 'winners');
+	const winnersHeight = winners.height;
 	const placed = new Map<string, PlacedMatch>();
 	const labels: ColumnLabel[] = [];
 	const roundsWithMatches = new Set(matches.map((m) => `${m.section}:${m.round}`));
@@ -72,7 +104,7 @@ export function layoutBracket(matches: TournamentMatch[], size: number, format: 
 	for (const m of matches) {
 		if (m.section !== 'winners') continue;
 		const r = m.round!;
-		placed.set(m.id, { match: m, x: (r - 1) * COL, y: LABEL_H + center(m.position!, 2 ** (r - 1)) - CARD_H / 2 });
+		placed.set(m.id, { match: m, x: (r - 1) * COL, y: LABEL_H + winners.centers.get(m.id)! - CARD_H / 2 });
 	}
 
 	let height = LABEL_H + winnersHeight;
@@ -97,13 +129,14 @@ export function layoutBracket(matches: TournamentMatch[], size: number, format: 
 			labels.push({ x: (l - 1) * COL, y: labelY, round: { kind: 'losers', round: l, isFinal: l === losersRounds } });
 		}
 
+		const losers = compactCenters(matches, 'losers');
 		for (const m of matches) {
 			if (m.section !== 'losers') continue;
 			const l = m.round!;
-			placed.set(m.id, { match: m, x: (l - 1) * COL, y: top + center(m.position!, 2 ** (Math.ceil(l / 2) - 1)) - CARD_H / 2 });
+			placed.set(m.id, { match: m, x: (l - 1) * COL, y: top + losers.centers.get(m.id)! - CARD_H / 2 });
 		}
 
-		const losersHeight = (size / 4 - 1) * UNIT + CARD_H;
+		const losersHeight = losers.height;
 		height = top + losersHeight;
 		divider = { y: dividerY, width: (Math.max(k, losersRounds) * COL) - (COL - CARD_W) };
 	}

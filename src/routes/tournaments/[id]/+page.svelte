@@ -28,6 +28,7 @@
 		listMatches,
 		listPlayers,
 		listRegistrations,
+		previewBracketLayout,
 		saveBracketLayout,
 		startTournament,
 		type Bracket,
@@ -836,6 +837,8 @@
 						editable={session.isAdmin && isBracketCreated(tournament.state)}
 						bind:editing={editingBracket}
 						onSaveLayout={handleSaveLayout}
+						onPreviewLayout={(slots) => previewBracketLayout(tournament!.id, slots)}
+						heightStorageKey={`bracket-height-${id}`}
 					/>
 				{/if}
 			{:else if tournament.challongeTournamentUrl && hasTournamentStarted(tournament.state)}
@@ -1324,7 +1327,6 @@
 		align-items: center;
 		gap: 10px 20px;
 		width: 100%;
-		margin-bottom: 16px;
 	}
 
 	.match-filters .search-input {
