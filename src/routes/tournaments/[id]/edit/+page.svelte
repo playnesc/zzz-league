@@ -33,7 +33,6 @@
 	let tournamentEndDate = $state("");
 	let tournamentType = $state("double elimination");
 	let breakTiesEnabled = $state(false);
-	let breakTiesPlace = $state(3);
 	let overrideEloEnabled = $state(false);
 	let overrideEloValue = $state(5);
 	let minCost = $state(2100);
@@ -80,7 +79,6 @@
 			registrationType = tournament.registrationType;
 			gameMode = tournament.gameMode;
 			breakTiesEnabled = tournament.consolationMatchesTargetRank != null;
-			breakTiesPlace = tournament.consolationMatchesTargetRank ?? 3;
 			overrideEloEnabled = (tournament.overrideEloChange ?? -1) !== -1;
 			overrideEloValue = overrideEloEnabled ? tournament.overrideEloChange! : 5;
 			minCost = tournament.minCost;
@@ -137,9 +135,8 @@
 				maxTier: parseInt(maxTier),
 				overrideEloChange: overrideEloEnabled ? overrideEloValue : -1,
 				bracketType: tournamentType,
-				consolationMatchesTargetRank: breakTiesEnabled
-					? breakTiesPlace
-					: null,
+				// Only a 3rd-place match is supported ("break ties up to place 3").
+				consolationMatchesTargetRank: breakTiesEnabled ? 3 : null,
 				visible,
 				discordRoleName,
 				discordChannelName,
@@ -174,7 +171,6 @@
 					bind:gameMode
 					bind:tournamentType
 					bind:breakTiesEnabled
-					bind:breakTiesPlace
 					bind:overrideEloEnabled
 					bind:overrideEloValue
 					bind:minTier

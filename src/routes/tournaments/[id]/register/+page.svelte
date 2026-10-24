@@ -184,7 +184,7 @@
 				<p class="notice">{$_("pageTournamentRegister.loginRequired")}</p>
 			{:else if !tierEligible}
 				<p class="notice">{$_("pageTournamentRegister.tierNotEligible")}</p>
-			{:else if isLocked(tournament.state) || tournament.challongeTournamentId}
+			{:else if isLocked(tournament.state)}
 				<p class="notice">{$_("pageTournamentRegister.tournamentStarted")}</p>
 			{:else if !registrationWindowOpen}
 				<p class="notice">{$_("pageTournamentRegister.registrationClosed")}</p>

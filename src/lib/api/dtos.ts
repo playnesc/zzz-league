@@ -1,7 +1,7 @@
 // Raw API DTO shapes (camelCase JSON, ISO date strings, snake_case string enums) — the wire
 // contract with ZenlessLeague.Api. Frontend domain types live in ../types; the per-domain files
 // in this directory (players.ts, tournaments.ts, ...) convert between the two.
-import type { PlayerRole, TournamentGameMode, TournamentRegistrationKind } from '../types';
+import type { BracketSection, PlayerRole, TournamentGameMode, TournamentRegistrationKind } from '../types';
 import type { Specialty } from '../costData';
 
 // GET /api/players/me/last-registration (204 when there's none).
@@ -93,7 +93,14 @@ export interface TournamentDto {
 export interface TournamentMatchDto {
 	id: string;
 	tournamentId: string;
-	challongeMatchId: number;
+	number: number | null;
+	section: BracketSection | null;
+	round: number | null;
+	position: number | null;
+	winnerToMatchId: string | null;
+	winnerToSlot: number | null;
+	loserToMatchId: string | null;
+	loserToSlot: number | null;
 	p1PlayerId: string | null;
 	p2PlayerId: string | null;
 	p1TeamId: string | null;

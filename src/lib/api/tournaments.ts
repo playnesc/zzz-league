@@ -88,20 +88,16 @@ export async function closeTournamentRegistration(id: string): Promise<Tournamen
 	return toTournament(await apiPost<TournamentDto>(`/api/tournaments/${id}/close-registration`));
 }
 
-export async function createChallongeBracket(id: string): Promise<Tournament> {
-	return toTournament(await apiPost<TournamentDto>(`/api/tournaments/${id}/challonge-bracket`));
+export async function createBracket(id: string): Promise<Tournament> {
+	return toTournament(await apiPost<TournamentDto>(`/api/tournaments/${id}/bracket`));
 }
 
-export async function startChallongeTournament(id: string): Promise<Tournament> {
+export async function startTournament(id: string): Promise<Tournament> {
 	return toTournament(await apiPost<TournamentDto>(`/api/tournaments/${id}/start`));
 }
 
 export async function finishTournament(id: string): Promise<Tournament> {
 	return toTournament(await apiPost<TournamentDto>(`/api/tournaments/${id}/finish`));
-}
-
-export async function updateTournamentGames(id: string): Promise<void> {
-	await apiPost(`/api/tournaments/${id}/refresh-games`);
 }
 
 export async function incrementTournamentCount(id: string): Promise<void> {

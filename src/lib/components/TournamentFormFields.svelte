@@ -10,7 +10,6 @@
 		gameMode = $bindable(),
 		tournamentType = $bindable(),
 		breakTiesEnabled = $bindable(),
-		breakTiesPlace = $bindable(),
 		overrideEloEnabled = $bindable(),
 		overrideEloValue = $bindable(),
 		minTier = $bindable(),
@@ -34,7 +33,6 @@
 		gameMode: TournamentGameMode;
 		tournamentType: string;
 		breakTiesEnabled: boolean;
-		breakTiesPlace: number;
 		overrideEloEnabled: boolean;
 		overrideEloValue: number;
 		minTier: string;
@@ -133,15 +131,6 @@
 				$_("tournamentFormFields.breakTiesLabel"),
 				() => (breakTiesEnabled = !breakTiesEnabled),
 			)}
-			<input
-				id="f-break-ties-place"
-				type="number"
-				min="1"
-				aria-label={$_("tournamentFormFields.placeLabel")}
-				class:input-disabled={!breakTiesEnabled}
-				bind:value={breakTiesPlace}
-				disabled={!breakTiesEnabled}
-			/>
 		</div>
 
 		<div class="form-group toggle-field">
