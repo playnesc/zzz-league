@@ -57,7 +57,7 @@
 	},
 	"tournamentCard": {
 		"registrationOpens": "Registration opens {date}",
-		"registrationUntil": "Registration until {date}",
+		"registrationOpen": "Registration open",
 		"startsOn": "Starts {date}",
 		"ongoing": "Tournament in progress",
 		"ended": "Tournament finished"

@@ -57,7 +57,7 @@
 	},
 	"tournamentCard": {
 		"registrationOpens": "Реєстрація з {date}",
-		"registrationUntil": "Реєстрація до {date}",
+		"registrationOpen": "Йде реєстрація",
 		"startsOn": "Початок {date}",
 		"ongoing": "Турнір триває",
 		"ended": "Турнір завершено"
