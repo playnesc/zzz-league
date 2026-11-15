@@ -89,6 +89,36 @@
 				</ul>
 			{/if}
 		</div>
+		<a
+			href="https://surfers.playnesc.com"
+			target="_blank"
+			rel="noopener noreferrer"
+			aria-label="Anime Surfers"
+			class="social-link"
+		>
+			<!-- Surfboard drawn horizontal (nose right) then tilted; the masks cut the stringer and the gap around the fin. -->
+			<svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true">
+				<defs>
+					<linearGradient id="surf-gradient" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="24" y2="0" gradientTransform="rotate(45 12 12)">
+						<stop offset="0" stop-color="#00c8ff" />
+						<stop offset="1" stop-color="#5a50ff" />
+					</linearGradient>
+					<mask id="surf-stringer-mask" maskUnits="userSpaceOnUse" x="-4" y="-4" width="32" height="32">
+						<rect x="-4" y="-4" width="32" height="32" fill="#fff" />
+						<path d="M-4 12H28" stroke="#000" stroke-width="0.8" />
+					</mask>
+					<mask id="surf-fin-mask" maskUnits="userSpaceOnUse" x="-4" y="-4" width="32" height="32">
+						<rect x="-4" y="-4" width="32" height="32" fill="#fff" />
+						<path d="M3.5 12.2C4.1 11.2 4.3 9.6 4 8.2 3.9 7.7 3.6 7.3 3.7 6.9 3.8 6.3 4.3 6.2 4.6 6.22 6.2 6.4 7.6 8.2 8.2 12.2Z" stroke="#000" stroke-width="1.6" />
+						<rect x="-4" y="12" width="32" height="16" fill="#fff" />
+					</mask>
+				</defs>
+				<g transform="rotate(-45 12 12)" fill="url(#surf-gradient)" mask="url(#surf-stringer-mask)">
+					<ellipse cx="12" cy="12" rx="14" ry="4.47" mask="url(#surf-fin-mask)" />
+					<path d="M3.5 12.2C4.1 11.2 4.3 9.6 4 8.2 3.9 7.7 3.6 7.3 3.7 6.9 3.8 6.3 4.3 6.2 4.6 6.22 6.2 6.4 7.6 8.2 8.2 12.2Z" />
+				</g>
+			</svg>
+		</a>
 		{#each links as link (link.label)}
 			<a
 				href={link.href}
