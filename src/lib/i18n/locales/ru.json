@@ -95,6 +95,12 @@
 		"redirecting": "Возврат на главую страницу…",
 		"connecting": "Подключение Discord…"
 	},
+	"pageGameLogin": {
+		"signedInAs": "Вы вошли как {name}.",
+		"returnToGame": "Можно закрыть это окно и вернуться в игру.",
+		"signInPrompt": "Войдите, чтобы ваши рекорды попали в таблицу лидеров Anime Surfers.",
+		"signIn": "Войти"
+	},
 	"pageTournamentsCreate": {
 		"title": "Создать турнир",
 		"noPermission": "Недостаточно прав для просмотра этой страницы."

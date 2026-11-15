@@ -95,6 +95,12 @@
 		"redirecting": "Returning to the home page…",
 		"connecting": "Connecting Discord…"
 	},
+	"pageGameLogin": {
+		"signedInAs": "Signed in as {name}.",
+		"returnToGame": "You can close this window and go back to the game.",
+		"signInPrompt": "Sign in to put your scores on the Anime Surfers leaderboard.",
+		"signIn": "Sign in"
+	},
 	"pageTournamentsCreate": {
 		"title": "Create tournament",
 		"noPermission": "You don't have permission to view this page."
