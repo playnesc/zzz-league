@@ -132,6 +132,12 @@
 </table>
 
 <style>
+	/* Fixed row height, with or without the admin-only buttons (the tournament page's table cap
+	   counts rows at this height). */
+	tbody tr {
+		height: 52px;
+	}
+
 	.approved-cell {
 		text-align: center;
 	}

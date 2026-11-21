@@ -85,12 +85,24 @@ export interface Archive {
 	players: ArchivedPlayerSnapshot[];
 }
 
-export type TournamentMatchState = string; // Challonge's own vocabulary, passed through verbatim.
+// "pending" (waiting for an opponent), "open" (playable), "complete".
+export type TournamentMatchState = string;
+
+export type BracketSection = "winners" | "losers" | "grand_final" | "third_place";
 
 export interface TournamentMatch {
 	id: string;
 	tournamentId: string;
-	challongeMatchId: number;
+	// Place in the bracket — all null for matches of tournaments run on Challonge. number is the
+	// play order ("M7"); winnerTo/loserTo say where each side goes next (slot 1 = p1, 2 = p2).
+	number: number | null;
+	section: BracketSection | null;
+	round: number | null;
+	position: number | null;
+	winnerToMatchId: string | null;
+	winnerToSlot: number | null;
+	loserToMatchId: string | null;
+	loserToSlot: number | null;
 	p1: string | null;
 	p2: string | null;
 	// Team-tournament equivalents of p1/p2 — set XOR with them, depending on the owning

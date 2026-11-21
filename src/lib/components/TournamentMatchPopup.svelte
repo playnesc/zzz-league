@@ -6,6 +6,7 @@
 	import { ApiError } from "$lib/api";
 	import NexusResultEmbed from "$lib/components/NexusResultEmbed.svelte";
 	import { _ } from "$lib/i18n";
+	import { TOURNAMENT_STATE, hasTournamentStarted } from "$lib/tournamentState";
 	import { useObjectUrlPreview } from "$lib/imagePreview.svelte.js";
 	import { getAuthSession } from "$lib/auth.svelte";
 	import {
@@ -26,6 +27,10 @@
 		match = $bindable(),
 		registeredPlayers = $bindable([]),
 		teamsById = new Map(),
+		// Called after any successful result submit (player or admin) so the page can re-fetch
+		// right away instead of relying only on the SignalR push, which anonymous/disconnected
+		// clients never get and which can arrive late.
+		onResultSubmitted = () => {},
 	} = $props();
 
 	let isTeamMatch = $derived(!!match.p1TeamId || !!match.p2TeamId);
@@ -47,9 +52,23 @@
 			? isMemberOfTeam(match.p1TeamId) || isMemberOfTeam(match.p2TeamId)
 			: session.user?.uid == match.p1 || session.user?.uid == match.p2,
 	);
-	let canApproveOwnResult = $derived(match.state !== "complete" && myGame);
+	// Bracket matches exist from bracket creation on, but are only playable once the tournament
+	// has started and both sides are known — the same rules the API enforces. Matches of
+	// tournaments run on Challonge (no section) keep the old checks.
+	let isBracketMatch = $derived(match.section !== null);
+	let bothSidesKnown = $derived(
+		isTeamMatch ? !!match.p1TeamId && !!match.p2TeamId : !!match.p1 && !!match.p2,
+	);
+	let canApproveOwnResult = $derived(
+		myGame &&
+			(isBracketMatch
+				? tournament.state === TOURNAMENT_STATE.STARTED && match.state === "open"
+				: match.state !== "complete"),
+	);
 	let canAdminSetResult = $derived(
-		(session.isAdmin || session.isModerator) && tournament.state !== "complete",
+		(session.isAdmin || session.isModerator) &&
+			tournament.state !== "complete" &&
+			(!isBracketMatch || (hasTournamentStarted(tournament.state) && bothSidesKnown)),
 	);
 
 	let inputScreenshot = $state<FileList | null>(null);
@@ -61,18 +80,20 @@
 	let matchResultP1 = $state(match.resultP1 ?? "00:00");
 	let matchResultP2 = $state(match.resultP2 ?? "00:00");
 
-	// Solo matches take their result from a nexus-shiyu.com result link — players must paste one,
+	// Solo matches take their result from a Nexus result link — players must paste one,
 	// moderators may (it prefills their editable fields). Team matches keep typed result + screenshot.
 	//
 	// NEXUS_PARSING_ENABLED = false while Nexus has no stable API to read results from: solo
 	// results are typed (like team matches) and the pasted link is only proof, shown as an embed
 	// instead of a screenshot. Flip together with the API's Nexus:ParseResults setting.
 	const NEXUS_PARSING_ENABLED = false;
+	// Nexus moved from nexus-shiyu.com to zzz.nexus; both still serve results. Keep in sync with
+	// the API's NexusLink.
 	const NEXUS_LINK_PATTERN =
-		/^https?:\/\/(www\.)?nexus-shiyu\.com\/results\/([a-z0-9]{10,40})(\/obs)?\/?([?#].*)?$/i;
+		/^https?:\/\/(www\.)?(zzz\.nexus|nexus-shiyu\.com)\/results\/(?<id>[a-z0-9]{10,40})(\/obs)?\/?([?#].*)?$/i;
 
 	function nexusIdFromUrl(url: string) {
-		return NEXUS_LINK_PATTERN.exec(url.trim())?.[2]?.toLowerCase() ?? null;
+		return NEXUS_LINK_PATTERN.exec(url.trim())?.groups?.id?.toLowerCase() ?? null;
 	}
 
 	type NexusDraft = {
@@ -274,7 +295,7 @@
 		return registeredPlayers.find((p) => p.player.uid === uid)?.player.name;
 	}
 
-	// "TEAM_NAME (P1 + P2)" — matches how team participants are named on the Challonge bracket.
+	// "TEAM_NAME (P1 + P2)" — the same label the bracket and match list use.
 	function getTeamLabel(teamId: string | null) {
 		if (!teamId) return undefined;
 		const team = teamsById.get(teamId);
@@ -330,6 +351,7 @@
 				matchResultP2,
 				resultScreenshot,
 			);
+			onResultSubmitted();
 		} catch (error) {
 			notify(error);
 		} finally {
@@ -365,6 +387,7 @@
 		try {
 			isApproving = true;
 			await approveResult(tournament.id, match.id, null, null, null, url || null, url ? ownNexus.p1Side : null);
+			onResultSubmitted();
 		} catch (error) {
 			notify(nexusErrorMessage(error));
 		} finally {
@@ -387,6 +410,7 @@
 		try {
 			isApproving = true;
 			await approveResult(tournament.id, match.id, matchResultP1, matchResultP2, null, url || null, null);
+			onResultSubmitted();
 		} catch (error) {
 			notify(nexusErrorMessage(error));
 		} finally {
@@ -418,21 +442,45 @@
 		if (!(await confirmDialog($_("tournamentMatchPopup.confirmAdminSetResult"), { confirmLabel: $_("tournamentMatchPopup.recordResultButton") }))) return;
 		try {
 			adminAction = "result";
-			await adminSetMatchResult(
-				tournament.id,
-				match.id,
-				matchResultP1,
-				matchResultP2,
-				adminScreenshot,
-				null,
-				null,
-				adminNexusUrl || null,
-				adminNexusUrl ? adminNexus.p1Side : null,
+			const recorded = await withResetConfirmation((confirmReset) =>
+				adminSetMatchResult(
+					tournament.id,
+					match.id,
+					matchResultP1,
+					matchResultP2,
+					adminScreenshot,
+					null,
+					null,
+					adminNexusUrl || null,
+					adminNexusUrl ? adminNexus.p1Side : null,
+					confirmReset,
+				),
 			);
+			if (recorded) onResultSubmitted();
 		} catch (error) {
 			notify(nexusErrorMessage(error));
 		} finally {
 			adminAction = null;
+		}
+	}
+
+	// Changing the winner of an already-played match resets the later matches it fed — the server
+	// answers 428 naming them; once the moderator confirms, the same request goes again with
+	// confirmReset. Returns whether the result was recorded.
+	async function withResetConfirmation(send: (confirmReset: boolean) => Promise<unknown>) {
+		try {
+			await send(false);
+			return true;
+		} catch (error) {
+			if (!(error instanceof ApiError && error.status === 428)) throw error;
+			const matches = error.message.match(/M\d+/g)?.join(", ") ?? "";
+			const confirmed = await confirmDialog($_("bracket.confirmResetMessage", { values: { matches } }), {
+				danger: true,
+				confirmLabel: $_("bracket.confirmReset"),
+			});
+			if (!confirmed) return false;
+			await send(true);
+			return true;
 		}
 	}
 
@@ -450,26 +498,12 @@
 			return;
 		try {
 			adminAction = side === "p1" ? "techloss-p1" : "techloss-p2";
-			if (isTeamMatch) {
-				await adminSetMatchResult(
-					tournament.id,
-					match.id,
-					null,
-					null,
-					null,
-					null,
-					side === "p1" ? match.p1TeamId : match.p2TeamId,
-				);
-			} else {
-				await adminSetMatchResult(
-					tournament.id,
-					match.id,
-					null,
-					null,
-					null,
-					side === "p1" ? match.p1 : match.p2,
-				);
-			}
+			const techLossUid = isTeamMatch ? null : side === "p1" ? match.p1 : match.p2;
+			const techLossTeamId = isTeamMatch ? (side === "p1" ? match.p1TeamId : match.p2TeamId) : null;
+			const recorded = await withResetConfirmation((confirmReset) =>
+				adminSetMatchResult(tournament.id, match.id, null, null, null, techLossUid, techLossTeamId, null, null, confirmReset),
+			);
+			if (recorded) onResultSubmitted();
 		} catch (error) {
 			notify(error);
 		} finally {

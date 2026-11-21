@@ -188,7 +188,7 @@
 				loadError = $_("pageTournamentSplit.notFound");
 				return;
 			}
-			if (isLocked(data.state) || data.challongeTournamentId) {
+			if (isLocked(data.state)) {
 				loadError = $_("pageTournamentSplit.splitUnavailableLocked");
 				return;
 			}

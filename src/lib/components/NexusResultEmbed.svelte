@@ -14,7 +14,7 @@
 	const CROP = { x: 110, y: 30, width: 1700, height: 810 };
 	let boxWidth = $state(0);
 	let scale = $derived(boxWidth / CROP.width);
-	let obsUrl = $derived(`https://nexus-shiyu.com/results/${encodeURIComponent(resultId)}/obs`);
+	let obsUrl = $derived(`https://zzz.nexus/results/${encodeURIComponent(resultId)}/obs`);
 </script>
 
 <div class="nexus-embed" style:aspect-ratio="{CROP.width} / {CROP.height}" bind:clientWidth={boxWidth}>

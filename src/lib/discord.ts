@@ -6,6 +6,30 @@ const DISCORD_CLIENT_ID = '1501228042926690486'
 
 export type DiscordOAuthMode = 'login' | 'link';
 
+const RETURN_PATH_KEY = 'nesc.discordReturnPath'
+
+// Where /discord-callback sends the visitor once it's done, for pages that open the login and want
+// them back (e.g. /game-login in the game's popup) instead of on the home page. Per tab.
+export function setDiscordReturnPath(path: string) {
+	try {
+		sessionStorage.setItem(RETURN_PATH_KEY, path)
+	} catch {
+		// Storage blocked: the callback falls back to the home page.
+	}
+}
+
+export function takeDiscordReturnPath(): string {
+	let path: string | null = null
+	try {
+		path = sessionStorage.getItem(RETURN_PATH_KEY)
+		sessionStorage.removeItem(RETURN_PATH_KEY)
+	} catch {
+		// Storage blocked.
+	}
+	// Only paths on this site.
+	return path && /^\/(?![/\\])/.test(path) ? path : resolve('/')
+}
+
 export function openDiscordOAuth(mode: DiscordOAuthMode) {
 	const redirectUri = `${window.location.origin}${resolve('/discord-callback')}`
 

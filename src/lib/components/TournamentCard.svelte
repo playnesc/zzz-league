@@ -24,7 +24,7 @@
 			case "upcoming":
 				return $_("tournamentCard.registrationOpens", { values: { date: date(tournament.registrationStartDate) } });
 			case "registration":
-				return $_("tournamentCard.registrationUntil", { values: { date: date(tournament.registrationEndDate) } });
+				return $_("tournamentCard.registrationOpen");
 			case "registration_closed":
 			case "bracket_created":
 				return $_("tournamentCard.startsOn", { values: { date: date(tournament.tournamentStartDate) } });

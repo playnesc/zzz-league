@@ -197,7 +197,7 @@
 				<p class="notice">{$_("pageTournamentRegisterTeam.noPermission")}</p>
 			{:else if !session.user}
 				<p class="notice">{$_("pageTournamentRegisterTeam.loginRequired")}</p>
-			{:else if isLocked(tournament.state) || tournament.challongeTournamentId}
+			{:else if isLocked(tournament.state)}
 				<p class="notice">{$_("pageTournamentRegisterTeam.tournamentStarted")}</p>
 			{:else if !registrationWindowOpen}
 				<p class="notice">{$_("pageTournamentRegisterTeam.registrationClosed")}</p>

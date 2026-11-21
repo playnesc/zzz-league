@@ -1,8 +1,7 @@
 <script lang="ts">
 	import { onMount } from "svelte";
 	import { goto } from "$app/navigation";
-	import { resolve } from "$app/paths";
-	import { handleDiscordCallback } from "$lib/discord";
+	import { handleDiscordCallback, takeDiscordReturnPath } from "$lib/discord";
 	import { _ } from "$lib/i18n";
 	import { getAuthSession } from "$lib/auth.svelte";
 
@@ -13,15 +12,16 @@
 
 	onMount(() => {
 		async function init() {
+			const returnPath = takeDiscordReturnPath();
 			try {
 				const linked = await handleDiscordCallback();
 				if (linked) session.applyPlayerUpdate(linked);
-				goto(resolve("/"));
+				goto(returnPath);
 			} catch (e: any) {
 				error = true;
 				errorText = e.message;
 				setTimeout(function () {
-					goto(resolve("/"));
+					goto(returnPath);
 				}, 3000);
 			}
 		}

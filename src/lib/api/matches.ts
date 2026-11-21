@@ -65,6 +65,7 @@ export async function adminSetMatchResult(
 	techLossTeamId: string | null = null,
 	nexusResultUrl: string | null = null,
 	nexusP1Side: NexusSide | null = null,
+	confirmReset = false,
 ): Promise<TournamentMatch> {
 	const dto = await apiPost<TournamentMatchDto>(`/api/tournaments/${tournamentId}/matches/${matchId}/admin-result`, {
 		resultP1,
@@ -74,6 +75,7 @@ export async function adminSetMatchResult(
 		techLossTeamId,
 		nexusResultUrl,
 		nexusP1Side,
+		confirmReset,
 	});
 	return toMatch(dto);
 }

@@ -12,13 +12,15 @@
 	import TournamentRegisterPopup from "$lib/components/TournamentRegistrationPopup.svelte";
 	import TournamentAddEntryPopup from "$lib/components/TournamentAddEntryPopup.svelte";
 	import TeamDetailsPopup from "$lib/components/TeamDetailsPopup.svelte";
+	import BracketView from "$lib/components/Bracket.svelte";
 	import { _, locale, formatDate } from "$lib/i18n";
 	import {
 		cancelTournamentRegistration,
 		closeTournamentRegistration,
-		createChallongeBracket,
+		createBracket,
 		deleteTournament,
 		finishTournament,
+		getBracket,
 		getTeam,
 		getTournament,
 		incrementSeasonalTournamentCount,
@@ -26,8 +28,10 @@
 		listMatches,
 		listPlayers,
 		listRegistrations,
-		startChallongeTournament,
-		updateTournamentGames,
+		previewBracketLayout,
+		saveBracketLayout,
+		startTournament,
+		type Bracket,
 	} from "$lib/backend";
 	import {
 		joinTournamentGroup,
@@ -73,10 +77,16 @@
 	let tournament = $state<Tournament>();
 	let loadState = $state<"loading" | "ready" | "missing">("loading");
 	let matches = $state<TournamentMatch[]>([]);
+	// null until the bracket is created, and for tournaments run on Challonge (those keep its embed).
+	let bracket = $state<Bracket | null>(null);
+	let editingBracket = $state(false);
 	let userRegistration = $state<TournamentRegistration | null>();
 	let userPlayer1 = $state<PlayerListItem | undefined>();
 	let userPlayer2 = $state<PlayerListItem | undefined>();
 	let registrations = $state<TournamentRegistration[]>([]);
+	// Re-fetches the match list and the participants table's player data (Elo/tier); assigned in
+	// onMount, where the loaders live. Called by the match popup right after a result is submitted.
+	let refreshMatchesAndTable = $state(() => {});
 	// Batch-resolved from registrations' playerIds — this tournament's registrants only, not the
 	// whole roster (see the player-list refactor: no more global players/playersByUid cache).
 	let registeredPlayersData = $state<PlayerListItem[]>([]);
@@ -203,7 +213,15 @@
 					return false;
 			}
 			return true;
-		}),
+		})
+			// Unfinished before finished; within each, the viewer's own matches first; then play
+			// order (M1, M2…). Matches from Challonge-era tournaments have no number and keep the
+			// server's order (sort is stable).
+			.sort((a, b) =>
+				Number(a.state === "complete") - Number(b.state === "complete") ||
+				Number(!isMyMatch(a)) - Number(!isMyMatch(b)) ||
+				(a.number ?? Infinity) - (b.number ?? Infinity),
+			),
 	);
 
 	let canView = $derived(tournament?.visible !== false || session.isModerator);
@@ -239,9 +257,7 @@
 		}[status];
 		return { text, tone: STATUS_TONE[status] };
 	});
-	let canCancelRegistration = $derived(
-		!!tournament && !isLocked(tournament.state) && !tournament.challongeTournamentId,
-	);
+	let canCancelRegistration = $derived(!!tournament && !isLocked(tournament.state));
 	// Presentational — mirrors the three conditions gating the individual buttons inside
 	// .actions-user, so the wrapper (and its divider) only renders when it will have content.
 	let hasUserActions = $derived(
@@ -301,7 +317,7 @@
 		if (creatingBracket || !tournament) return;
 		runAction(
 			(v) => (creatingBracket = v),
-			() => createChallongeBracket(tournament!.id),
+			() => createBracket(tournament!.id),
 			$_("pageTournamentDetail.confirmCreateBracket"),
 			false,
 			$_("pageTournamentDetail.createBracketButton"),
@@ -311,13 +327,18 @@
 	let startingTournament = $state(false);
 	function handleStartTournament() {
 		if (startingTournament) return;
-		runAction((v) => (startingTournament = v), () => startChallongeTournament(tournament!.id));
+		runAction((v) => (startingTournament = v), () => startTournament(tournament!.id));
 	}
 
-	let updatingGames = $state(false);
-	function handleUpdateTournamentGames() {
-		if (updatingGames || !tournament) return;
-		runAction((v) => (updatingGames = v), () => updateTournamentGames(tournament!.id));
+	// The matches were regenerated too — reload them here rather than waiting on the SignalR push.
+	async function handleSaveLayout(slots: (string | null)[]) {
+		try {
+			bracket = await saveBracketLayout(tournament!.id, slots);
+			refreshMatchesAndTable();
+		} catch (error) {
+			notify(error);
+			throw error;
+		}
 	}
 
 	let finishingTournament = $state(false);
@@ -372,8 +393,7 @@
 		return registeredPlayers.find((p) => p.player.uid === uid)?.player.name;
 	}
 
-	// 2v2 equivalent of getPlayerName — "TEAM_NAME (P1 + P2)", per how team participants are
-	// named on the Challonge bracket itself.
+	// 2v2 equivalent of getPlayerName — "TEAM_NAME (P1 + P2)".
 	function getTeamLabel(teamId: string | null) {
 		if (!teamId) return undefined;
 		const team = teamsById.get(teamId);
@@ -383,6 +403,25 @@
 
 	function getMatchSideLabel(uid: string | null, teamId: string | null) {
 		return teamId ? getTeamLabel(teamId) : getPlayerName(uid);
+	}
+
+	// Bracket entrants are uids in solo tournaments, team ids in team tournaments.
+	function getEntrantLabel(key: string) {
+		return tournament?.registrationType === "team" ? getTeamLabel(key) : getPlayerName(key);
+	}
+
+	let myEntrantKey = $derived(myRegistration ? (myRegistration.teamId ?? myRegistration.playerId) : null);
+
+	function isMyMatch(m: TournamentMatch) {
+		if (!myEntrantKey) return false;
+		return [m.p1, m.p2, m.p1TeamId, m.p2TeamId].includes(myEntrantKey);
+	}
+
+	// Mirrors the server's prize Elo (TournamentLifecycleService.ApplyPrizeEloBonusAsync).
+	function prizeElo(rank: number) {
+		const seasonal = (tournament?.overrideEloChange ?? -1) === -1;
+		const prizes: Record<number, number> = seasonal ? { 1: 40, 2: 20, 3: 10 } : { 1: 15, 2: 10 };
+		return prizes[rank];
 	}
 
 	// Team side: the team's own uploaded photo (no per-member agent avatar to pick between).
@@ -469,6 +508,11 @@
 			if (!cancelled) matches = loaded;
 		}
 
+		async function loadBracket() {
+			const loaded = await getBracket(tournamentId);
+			if (!cancelled) bracket = loaded;
+		}
+
 		// Batch-resolves just this tournament's registrants (not the whole roster — see the
 		// player-list refactor) — re-run whenever match/tournament changes might have moved a
 		// registrant's Elo/tier, so TournamentPlayerTable's columns stay live. Team registrations
@@ -496,8 +540,15 @@
 			await loadRegisteredPlayersData();
 		}
 
+		refreshMatchesAndTable = () => {
+			loadMatches();
+			loadBracket();
+			loadRegisteredPlayersData();
+		};
+
 		loadTournament();
 		loadMatches();
+		loadBracket();
 		loadRegistrations();
 		joinTournamentGroup(tournamentId);
 
@@ -505,6 +556,7 @@
 			if (changedId !== tournamentId) return;
 			loadTournament();
 			loadMatches();
+			loadBracket();
 			loadRegisteredPlayersData();
 		});
 		const unsubRegistrationChanged = onRegistrationChanged((changedId) => {
@@ -520,6 +572,7 @@
 			if (changedId !== tournamentId) return;
 			loadTournament();
 			loadMatches();
+			loadBracket();
 			loadRegisteredPlayersData();
 		});
 
@@ -703,26 +756,21 @@
 									>{$_("pageTournamentDetail.createBracketButton")}</button
 								>
 							{/if}
-							{#if isBracketCreated(tournament.state)}
+							{#if tournament.challongeTournamentUrl}
 								<a
 									class="btn-common"
 									href={tournament.challongeTournamentUrl}
 									target="_blank"
 									rel="noopener noreferrer">{$_("pageTournamentDetail.openInChallongeButton")}</a
 								>
+							{/if}
+							{#if isBracketCreated(tournament.state)}
 								<button
 									class="btn-common btn-play"
 									class:btn-loading={startingTournament}
+									disabled={editingBracket}
 									onclick={handleStartTournament}
 									>{$_("pageTournamentDetail.startTournamentButton")}</button
-								>
-							{/if}
-							{#if tournament.state === TOURNAMENT_STATE.STARTED}
-								<button
-									class="btn-common btn-play"
-									class:btn-loading={updatingGames}
-									onclick={handleUpdateTournamentGames}
-									>{$_("pageTournamentDetail.forceUpdateGamesButton")}</button
 								>
 							{/if}
 							{#if tournament.state === TOURNAMENT_STATE.AWAITING_REVIEW}
@@ -770,7 +818,43 @@
 				</div>
 			{/if}
 
-			{#if tournament.challongeTournamentUrl && hasTournamentStarted(tournament.state)}
+			{#if bracket && bracket.standings.length > 0}
+				<h2 class="section-heading">{$_("bracket.finalStandings")}</h2>
+				<div class="standings">
+					{#each bracket.standings as standing (standing.playerId ?? standing.teamId)}
+						{@const prize = prizeElo(standing.rank)}
+						<div class="standing">
+							<span class="standing-rank rank-{standing.rank}">{standing.rank}</span>
+							<span class="standing-name">{getEntrantLabel((standing.playerId ?? standing.teamId)!) ?? "…"}</span>
+							{#if prize}<span class="standing-prize">{$_("bracket.prizeElo", { values: { n: prize } })}</span>{/if}
+						</div>
+					{/each}
+				</div>
+			{/if}
+
+			{#if bracket && isLocked(tournament.state)}
+				<h2 class="collapsible-heading">
+					<button type="button" class="collapsible-header" aria-expanded={bracketExpanded} onclick={() => (bracketExpanded = !bracketExpanded)}>
+						<span>{$_("pageTournamentDetail.bracketHeading")}</span>
+						<svg class="collapse-arrow" class:collapsed={!bracketExpanded} aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+					</button>
+				</h2>
+				{#if bracketExpanded}
+					<BracketView
+						{matches}
+						{bracket}
+						selfKey={myEntrantKey}
+						started={hasTournamentStarted(tournament.state)}
+						labelFor={getEntrantLabel}
+						onOpenMatch={openMatch}
+						editable={session.isAdmin && isBracketCreated(tournament.state)}
+						bind:editing={editingBracket}
+						onSaveLayout={handleSaveLayout}
+						onPreviewLayout={(slots) => previewBracketLayout(tournament!.id, slots)}
+						heightStorageKey={`bracket-height-${id}`}
+					/>
+				{/if}
+			{:else if tournament.challongeTournamentUrl && hasTournamentStarted(tournament.state)}
 				<h2 class="collapsible-heading">
 					<button type="button" class="collapsible-header" aria-expanded={bracketExpanded} onclick={() => (bracketExpanded = !bracketExpanded)}>
 						<span>{$_("pageTournamentDetail.bracketHeading")}</span>
@@ -874,7 +958,7 @@
 								!!match.resultP2}
 							{@const p1Avatar = getMatchSideAvatarSrc(match.p1, match.p1TeamId)}
 							{@const p2Avatar = getMatchSideAvatarSrc(match.p2, match.p2TeamId)}
-							<div class="match-item">
+							<div class="match-item" class:match-item-mine={isMyMatch(match)}>
 								<button
 									type="button"
 									class="match-open"
@@ -910,7 +994,10 @@
 										)}</button
 									>
 								</div>
-								{#if hasResult}
+								{#if match.techLossUid || match.techLossTeamId}
+									<!-- A tech loss decides the match whatever was typed, so it replaces the score. -->
+									<span class="match-vs">{$_("pageTournamentDetail.techLossLabel")}</span>
+								{:else if hasResult}
 									<span class="match-score-pair">
 										<span class="match-score {p1Class === 'match-winner' ? 'match-score-win' : ''}"
 											>{match.resultP1}</span
@@ -966,9 +1053,9 @@
 				class="table-wrapper"
 				use:capDefaultHeight={{
 					trigger: tournament.registrationType === "team" ? registeredTeamRegistrations.length : registeredPlayers.length,
-					// header (33.5px) + 12 full rows (51px each) — keeps the capped height from
-					// ever stopping mid-row (matches the leaderboard's table-wrapper sizing).
-					maxHeight: 33.5 + 12 * 51,
+					// header (34.5px) + 12 full rows (52px each, see the tables' row height) — keeps the capped height from
+					// ever stopping mid-row.
+					maxHeight: 34.5 + 12 * 52,
 					storageKey: `tournament-table-height-${id}`,
 				}}
 			>
@@ -1017,6 +1104,7 @@
 		match={currentMatch}
 		{registeredPlayers}
 		{teamsById}
+		onResultSubmitted={refreshMatchesAndTable}
 	></TournamentGamePopup>
 {/if}
 {#if addPlayerPopupOpen}
@@ -1033,6 +1121,75 @@
 <TeamDetailsPopup bind:open={teamDetailsOpen} team={selectedTeam} />
 
 <style>
+	.section-heading {
+		font-size: 16px;
+	}
+
+	.standings {
+		display: grid;
+		grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+		gap: 8px;
+	}
+
+	.standing {
+		display: flex;
+		align-items: center;
+		gap: 10px;
+		min-width: 0;
+		padding: 10px 14px;
+		border-radius: var(--r-md);
+		background: var(--surface-2);
+		border: 1px solid var(--border-soft);
+	}
+
+	.standing-rank {
+		width: 26px;
+		height: 26px;
+		flex-shrink: 0;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		border-radius: 50%;
+		font-size: var(--fs-sm);
+		font-weight: 800;
+		background: var(--bg-elevated);
+		color: var(--text-muted);
+		border: 1px solid var(--border);
+	}
+
+	.standing-rank.rank-1 {
+		background: var(--gold-dim);
+		color: var(--gold);
+		border-color: var(--gold-border);
+	}
+
+	.standing-rank.rank-2 {
+		background: var(--rank-silver-dim);
+		color: var(--rank-silver);
+		border-color: color-mix(in oklch, var(--rank-silver) 35%, transparent);
+	}
+
+	.standing-rank.rank-3 {
+		background: var(--rank-bronze-dim);
+		color: var(--rank-bronze);
+		border-color: color-mix(in oklch, var(--rank-bronze) 40%, transparent);
+	}
+
+	.standing-name {
+		flex: 1;
+		min-width: 0;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+		font-weight: 700;
+	}
+
+	.standing-prize {
+		font-size: var(--fs-sm);
+		font-weight: 800;
+		color: var(--success);
+	}
+
 	.bracket-resizable {
 		resize: vertical;
 		overflow: auto;
@@ -1065,6 +1222,15 @@
 
 	.match-item:hover {
 		border-color: var(--gold-border);
+	}
+
+	/* The viewer's own matches, outlined in blue like their match in the bracket. */
+	.match-item.match-item-mine {
+		border-color: color-mix(in oklch, var(--info) 80%, transparent);
+	}
+
+	.match-item.match-item-mine:hover {
+		border-color: var(--info);
 	}
 
 	.match-open {
@@ -1186,7 +1352,6 @@
 		align-items: center;
 		gap: 10px 20px;
 		width: 100%;
-		margin-bottom: 16px;
 	}
 
 	.match-filters .search-input {
