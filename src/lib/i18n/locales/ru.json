@@ -315,7 +315,7 @@
 		"recordResultButton": "Записать результат",
 		"techLossButton": "Техлуз",
 		"nexusLinkLabel": "Ссылка на результат Nexus",
-		"nexusLinkPlaceholder": "https://nexus-shiyu.com/results/…/obs",
+		"nexusLinkPlaceholder": "https://zzz.nexus/results/…/obs",
 		"nexusLinkInvalid": "Это не ссылка на результат Nexus",
 		"nexusLinkRequired": "Вставьте ссылку на результат Nexus",
 		"nexusLoading": "Читаем результат Nexus…",

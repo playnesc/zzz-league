@@ -315,7 +315,7 @@
 		"recordResultButton": "Record result",
 		"techLossButton": "Tech loss",
 		"nexusLinkLabel": "Nexus result link",
-		"nexusLinkPlaceholder": "https://nexus-shiyu.com/results/…/obs",
+		"nexusLinkPlaceholder": "https://zzz.nexus/results/…/obs",
 		"nexusLinkInvalid": "That's not a Nexus result link",
 		"nexusLinkRequired": "Paste the Nexus result link",
 		"nexusLoading": "Reading the Nexus result…",

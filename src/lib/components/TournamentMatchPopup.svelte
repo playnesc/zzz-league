@@ -80,18 +80,20 @@
 	let matchResultP1 = $state(match.resultP1 ?? "00:00");
 	let matchResultP2 = $state(match.resultP2 ?? "00:00");
 
-	// Solo matches take their result from a nexus-shiyu.com result link — players must paste one,
+	// Solo matches take their result from a Nexus result link — players must paste one,
 	// moderators may (it prefills their editable fields). Team matches keep typed result + screenshot.
 	//
 	// NEXUS_PARSING_ENABLED = false while Nexus has no stable API to read results from: solo
 	// results are typed (like team matches) and the pasted link is only proof, shown as an embed
 	// instead of a screenshot. Flip together with the API's Nexus:ParseResults setting.
 	const NEXUS_PARSING_ENABLED = false;
+	// Nexus moved from nexus-shiyu.com to zzz.nexus; both still serve results. Keep in sync with
+	// the API's NexusLink.
 	const NEXUS_LINK_PATTERN =
-		/^https?:\/\/(www\.)?nexus-shiyu\.com\/results\/([a-z0-9]{10,40})(\/obs)?\/?([?#].*)?$/i;
+		/^https?:\/\/(www\.)?(zzz\.nexus|nexus-shiyu\.com)\/results\/(?<id>[a-z0-9]{10,40})(\/obs)?\/?([?#].*)?$/i;
 
 	function nexusIdFromUrl(url: string) {
-		return NEXUS_LINK_PATTERN.exec(url.trim())?.[2]?.toLowerCase() ?? null;
+		return NEXUS_LINK_PATTERN.exec(url.trim())?.groups?.id?.toLowerCase() ?? null;
 	}
 
 	type NexusDraft = {
