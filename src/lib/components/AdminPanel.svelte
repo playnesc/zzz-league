@@ -74,6 +74,8 @@
 
 	let winningPlayer = $state("1");
 
+	let expanded = $state(false);
+
 	async function handleSetTimer() {
 		const hours = await promptDialog($_("adminPanel.setTimerPrompt"), { inputType: "number" });
 		if (hours) {
@@ -232,8 +234,14 @@
 </script>
 
 <div class="card admin-card">
-	<h2>{$_("adminPanel.title")}</h2>
+	<h2 class:collapsed={!expanded}>
+		<button type="button" class="collapsible-header" aria-expanded={expanded} onclick={() => (expanded = !expanded)}>
+			<span>{$_("adminPanel.title")}</span>
+			<svg class="collapse-arrow" class:collapsed={!expanded} aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+		</button>
+	</h2>
 
+	{#if expanded}
 	<div class="stack">
 		<a class="btn-common" href={resolve("/tournaments/create")}>
 			<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
@@ -335,6 +343,7 @@
 		<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8v13H3V8"/><path d="M1 3h22v5H1z"/><line x1="10" y1="12" x2="14" y2="12"/></svg>
 		{$_("adminPanel.resetSeasonButton")}
 	</button>
+	{/if}
 </div>
 
 <style>
@@ -346,6 +355,37 @@
 
 	.admin-card :global(h2) {
 		margin-bottom: 14px;
+	}
+
+	.admin-card h2.collapsed {
+		border-bottom: none;
+		padding-bottom: 0;
+		margin-bottom: 0;
+	}
+
+	.collapsible-header {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		width: 100%;
+		background: none;
+		border: none;
+		padding: 0;
+		color: inherit;
+		font: inherit;
+		text-align: left;
+		cursor: pointer;
+		user-select: none;
+	}
+
+	.collapse-arrow {
+		flex-shrink: 0;
+		color: var(--text-muted);
+		transition: transform 0.15s ease;
+	}
+
+	.collapse-arrow.collapsed {
+		transform: rotate(-90deg);
 	}
 
 	.stack {
