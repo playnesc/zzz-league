@@ -13,6 +13,7 @@ export interface TournamentFormInput {
 	tournamentStartDate: string;
 	tournamentEndDate: string;
 	tournamentType: string;
+	rankedEnabled: boolean;
 	overrideEloEnabled: boolean;
 	overrideEloValue: number;
 	discordRoleName: string;
@@ -52,7 +53,7 @@ export function parseAndValidateTournamentForm(v: TournamentFormInput): Tourname
 	if (tourEnd <= tourStart) {
 		return { error: get(_)("tournamentForm.tournamentEndAfterStart") };
 	}
-	if (v.overrideEloEnabled && v.overrideEloValue <= 0) {
+	if (v.rankedEnabled && v.overrideEloEnabled && v.overrideEloValue <= 0) {
 		return { error: get(_)("tournamentForm.eloMustBePositive") };
 	}
 

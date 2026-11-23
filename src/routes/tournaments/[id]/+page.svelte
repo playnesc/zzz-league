@@ -419,6 +419,7 @@
 
 	// Mirrors the server's prize Elo (TournamentLifecycleService.ApplyPrizeEloBonusAsync).
 	function prizeElo(rank: number) {
+		if (!tournament?.isRanked) return undefined;
 		const seasonal = (tournament?.overrideEloChange ?? -1) === -1;
 		const prizes: Record<number, number> = seasonal ? { 1: 40, 2: 20, 3: 10 } : { 1: 15, 2: 10 };
 		return prizes[rank];
@@ -686,9 +687,11 @@
 					<div class="spec">
 						<span class="spec-label">{$_("pageTournamentDetail.specEloChange")}</span>
 						<span class="spec-value"
-							>{tournament.overrideEloChange == -1
-								? $_("pageTournamentDetail.standardElo")
-								: tournament.overrideEloChange}</span
+							>{!tournament.isRanked
+								? $_("pageTournamentDetail.noElo")
+								: tournament.overrideEloChange == -1
+									? $_("pageTournamentDetail.standardElo")
+									: tournament.overrideEloChange}</span
 						>
 					</div>
 				</div>

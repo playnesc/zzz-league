@@ -54,6 +54,7 @@ export interface CreateTournamentInput {
 	minCharacters: number;
 	minTier: number;
 	maxTier: number;
+	isRanked: boolean;
 	overrideEloChange: number;
 	bracketType: string;
 	consolationMatchesTargetRank: number | null;

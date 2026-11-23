@@ -84,6 +84,7 @@ export interface TournamentDto {
 	winnerTeamId: string | null;
 	divisionGroupId: string | null;
 	divisionIndex: number | null;
+	isRanked: boolean;
 	overrideEloChange: number | null;
 	consolationMatchesTargetRank: number | null;
 	discordRoleName: string | null;
@@ -174,6 +175,8 @@ export interface HistoryEntryDto {
 	p2Change: number | null;
 	tournamentId: string | null;
 	tournamentName: string | null;
+	tournamentIsRanked: boolean | null;
+	p1Won: boolean | null;
 	tournamentMatchId: string | null;
 	kind: string;
 	resultP1: string | null;

@@ -86,8 +86,8 @@
 				<h2>
 					<svg class="rules-icon" aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 21h8"/><path d="M12 17v4"/><path d="M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M7 5H4a1 1 0 0 0-1 1 5 5 0 0 0 4 4.9"/><path d="M17 5h3a1 1 0 0 1 1 1 5 5 0 0 1-4 4.9"/></svg>
 					{$_("sidePanel.leagueCodeTitle")}
+					<svg class="rules-chevron" aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
 				</h2>
-				<svg class="rules-chevron" aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
 			</summary>
 			<ul class="rules-list">
 				<li>{@html $_("sidePanel.rules.ranks")}</li>
@@ -190,11 +190,14 @@
 		color: var(--danger);
 	}
 
+	/* No flex gap: a closed <details> still lays out its (empty) content slot, so the card's gap
+	   would add space under the summary and make the collapsed card bottom-heavy. */
+	.rules-card {
+		gap: 0;
+	}
+
 	.rules-card summary {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		gap: 10px;
+		display: block;
 		cursor: pointer;
 		list-style: none;
 		border-radius: var(--r-sm);
@@ -205,12 +208,11 @@
 	}
 
 	.rules-card summary h2 {
-		flex: 1;
 		margin-bottom: 0;
 	}
 
 	.rules-card[open] summary {
-		margin-bottom: 8px;
+		margin-bottom: 14px;
 	}
 
 	.rules-card:not([open]) summary h2 {
@@ -223,14 +225,17 @@
 		flex-shrink: 0;
 	}
 
+	/* Inside the h2 so it centres on the title line (not the h2's padding) and the divider spans
+	   the full width; same right/down convention as the admin panel and tournament sections. */
 	.rules-chevron {
 		flex-shrink: 0;
+		margin-left: auto;
 		color: var(--text-muted);
-		transition: transform 0.15s;
+		transition: transform 0.15s ease;
 	}
 
-	.rules-card[open] .rules-chevron {
-		transform: rotate(180deg);
+	.rules-card:not([open]) .rules-chevron {
+		transform: rotate(-90deg);
 	}
 
 	.rules-list {
