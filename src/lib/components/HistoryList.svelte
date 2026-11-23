@@ -237,10 +237,14 @@
 		{@const rightChange = isLeft ? entry.p2Change : entry.p1Change}
 		{@const leftResult = isLeft ? entry.resultP1 : entry.resultP2}
 		{@const rightResult = isLeft ? entry.resultP2 : entry.resultP1}
+		<!-- unranked results move 0 Elo, so win/loss colouring comes from p1Won instead of the change -->
+		{@const unranked = entry.tournamentIsRanked === false}
+		{@const leftOutcome = unranked ? (entry.p1Won == null ? 0 : entry.p1Won === isLeft ? 1 : -1) : leftChange}
+		{@const rightOutcome = unranked ? -leftOutcome : (rightChange ?? 0)}
 
 		{@const canOpenMatch = !!entry.tournamentId && !!entry.tournamentMatchId}
 		<div
-			class="h-item {viewerId ? changeClass(leftChange) : ''}"
+			class="h-item {viewerId ? changeClass(leftOutcome) : ''}"
 			class:clickable={canOpenMatch}
 		>
 			{#if canOpenMatch}
@@ -253,8 +257,8 @@
 				></button>
 			{/if}
 			<div class="h-players">
-				<span class="h-delta {changeClass(leftChange)}"
-					>{leftChange > 0 ? "+" : ""}{leftChange}</span
+				<span class="h-delta {changeClass(unranked ? 0 : leftChange)}"
+					>{unranked ? "–" : `${leftChange > 0 ? "+" : ""}${leftChange}`}</span
 				>
 				<button type="button" class="h-name" onclick={() => openPlayer(left)}>
 					{getPlayerName(left)}
@@ -264,8 +268,8 @@
 					<button type="button" class="h-name" class:opponent={!!viewerId} onclick={() => openPlayer(right!)}>
 						{getPlayerName(right)}
 					</button>
-					<span class="h-delta {changeClass(rightChange!)}"
-						>{rightChange! > 0 ? "+" : ""}{rightChange}</span
+					<span class="h-delta {changeClass(unranked ? 0 : rightChange!)}"
+						>{unranked ? "–" : `${rightChange! > 0 ? "+" : ""}${rightChange}`}</span
 					>
 				{:else}
 					<span class="h-vs adjustment">{$_("historyList.eloAdjustment")}</span>
@@ -278,7 +282,7 @@
 				{:else if entry.resultP1 && entry.resultP2}
 					<!-- winner/loser colouring follows the Elo change, so it works for both scores (higher wins) and timers (lower wins) -->
 					<span class="h-score"
-						><span class={changeClass(leftChange)}>{leftResult}</span> – <span class={changeClass(rightChange ?? 0)}>{rightResult}</span></span
+						><span class={changeClass(leftOutcome)}>{leftResult}</span> – <span class={changeClass(rightOutcome)}>{rightResult}</span></span
 					>
 				{/if}
 			</div>

@@ -157,6 +157,8 @@ export interface Tournament {
 	winnerTeamId: string | null;
 	divisionGroupId: string | null;
 	divisionIndex: number | null;
+	// Unranked tournaments record results with 0 Elo change and award no prize Elo.
+	isRanked: boolean;
 	overrideEloChange: number | null;
 	consolationMatchesTargetRank: number | null;
 	discordRoleName: string | null;
@@ -201,6 +203,8 @@ export interface HistoryEntry {
 	p2Change: number | null;
 	tournamentId: string | null;
 	tournamentName: string | null;
+	tournamentIsRanked: boolean | null;
+	p1Won: boolean | null;
 	tournamentMatchId: string | null;
 	kind: TournamentMatchKind;
 	resultP1: string | null;

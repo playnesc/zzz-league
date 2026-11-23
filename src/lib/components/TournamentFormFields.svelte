@@ -10,6 +10,7 @@
 		gameMode = $bindable(),
 		tournamentType = $bindable(),
 		breakTiesEnabled = $bindable(),
+		rankedEnabled = $bindable(),
 		overrideEloEnabled = $bindable(),
 		overrideEloValue = $bindable(),
 		minTier = $bindable(),
@@ -33,6 +34,7 @@
 		gameMode: TournamentGameMode;
 		tournamentType: string;
 		breakTiesEnabled: boolean;
+		rankedEnabled: boolean;
 		overrideEloEnabled: boolean;
 		overrideEloValue: number;
 		minTier: string;
@@ -54,10 +56,10 @@
 	let descriptionPreview = $derived(renderMarkdown(description));
 </script>
 
-{#snippet checkbox(id: string, checked: boolean, label: string, onToggle: () => void)}
-	<div class="check-row">
+{#snippet checkbox(id: string, checked: boolean, label: string, onToggle: () => void, disabled = false)}
+	<div class="check-row" class:check-disabled={disabled}>
 		<span class="cb-wrap">
-			<input {id} type="checkbox" class="cb-input" {checked} onchange={onToggle} />
+			<input {id} type="checkbox" class="cb-input" {checked} {disabled} onchange={onToggle} />
 			{#if checked}
 				<svg class="cb-check" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
 			{/if}
@@ -115,39 +117,53 @@
 
 <div class="form-section">
 	<div class="section-label">{$_("tournamentFormFields.sectionFormat")}</div>
-	<div class="form-grid">
-		<div class="form-group">
+	<div class="format-row">
+		<div class="form-group format-type">
 			<label for="f-type">{$_("tournamentFormFields.tournamentTypeLabel")}</label>
 			<select id="f-type" bind:value={tournamentType}>
 				<option value="single elimination">{$_("common.singleElimination")}</option>
 				<option value="double elimination">{$_("common.doubleElimination")}</option>
 			</select>
 		</div>
+		{@render checkbox(
+			"f-break-ties",
+			breakTiesEnabled,
+			$_("tournamentFormFields.breakTiesLabel"),
+			() => (breakTiesEnabled = !breakTiesEnabled),
+		)}
+	</div>
 
-		<div class="form-group toggle-field">
+	<div class="elo-panel" class:ranked={rankedEnabled}>
+		<div class="elo-head">
 			{@render checkbox(
-				"f-break-ties",
-				breakTiesEnabled,
-				$_("tournamentFormFields.breakTiesLabel"),
-				() => (breakTiesEnabled = !breakTiesEnabled),
+				"f-ranked",
+				rankedEnabled,
+				$_("tournamentFormFields.rankedLabel"),
+				() => (rankedEnabled = !rankedEnabled),
 			)}
+			<p class="field-hint">
+				{rankedEnabled ? $_("tournamentFormFields.rankedHint") : $_("tournamentFormFields.unrankedHint")}
+			</p>
 		</div>
 
-		<div class="form-group toggle-field">
+		<!-- Elo options only mean something for a ranked tournament. -->
+		<div class="elo-option" class:off={!rankedEnabled}>
 			{@render checkbox(
 				"f-elo-enabled",
 				overrideEloEnabled,
 				$_("tournamentFormFields.fixedEloLabel"),
 				() => (overrideEloEnabled = !overrideEloEnabled),
+				!rankedEnabled,
 			)}
 			<input
 				id="f-elo-value"
 				type="number"
 				min="1"
 				aria-label={$_("tournamentFormFields.valueLabel")}
-				class:input-disabled={!overrideEloEnabled}
+				class="elo-value"
+				class:input-disabled={!rankedEnabled || !overrideEloEnabled}
 				bind:value={overrideEloValue}
-				disabled={!overrideEloEnabled}
+				disabled={!rankedEnabled || !overrideEloEnabled}
 			/>
 		</div>
 	</div>
@@ -299,17 +315,6 @@
 		max-width: 820px;
 	}
 
-	.toggle-field .check-row {
-		align-self: auto;
-		height: auto;
-	}
-
-	.toggle-field .check-row label {
-		color: var(--text-dim);
-		font-weight: 600;
-		white-space: nowrap;
-	}
-
 	.check-row {
 		display: flex;
 		align-items: center;
@@ -323,6 +328,94 @@
 		color: var(--text-muted);
 		font-weight: 500;
 		cursor: pointer;
+	}
+
+	.check-row.check-disabled label,
+	.check-row.check-disabled :global(.cb-input) {
+		cursor: not-allowed;
+	}
+
+	/* system select + 3rd-place toggle on one line, the toggle centred on the select */
+	.format-row {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: flex-end;
+		gap: 14px 28px;
+		max-width: 820px;
+	}
+
+	.format-type {
+		flex: 0 1 260px;
+	}
+
+	.format-row .check-row label {
+		color: var(--text-dim);
+		font-weight: 600;
+	}
+
+	/* "ranked" owns the Elo options, so they share one panel: the toggle heads it, the
+	   dependent options sit below and dim out when the tournament is unranked */
+	.elo-panel {
+		max-width: 820px;
+		border: 1px solid var(--border-soft);
+		border-radius: var(--r-md);
+		background: var(--bg-elevated);
+		transition: border-color 0.15s;
+	}
+
+	.elo-panel.ranked {
+		border-color: color-mix(in oklch, var(--gold) 35%, var(--border-soft));
+	}
+
+	.elo-panel .check-row {
+		align-self: auto;
+		height: auto;
+	}
+
+	.elo-head {
+		display: flex;
+		flex-direction: column;
+		gap: 4px;
+		padding: 12px 14px;
+	}
+
+	.elo-head .check-row label {
+		font-size: 13px;
+		font-weight: 700;
+		color: var(--text);
+	}
+
+	/* lines up under the label text: 15px checkbox + 9px gap */
+	.field-hint {
+		margin: 0;
+		padding-left: 24px;
+		font-size: 12px;
+		color: var(--text-dim);
+		line-height: 1.4;
+	}
+
+	.elo-option {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		justify-content: space-between;
+		gap: 8px 16px;
+		padding: 10px 14px 10px 38px;
+		border-top: 1px solid var(--border-soft);
+		transition: opacity 0.15s;
+	}
+
+	.elo-option.off {
+		opacity: 0.4;
+	}
+
+	.elo-option .check-row label {
+		color: var(--text-muted);
+		font-weight: 600;
+	}
+
+	.elo-value {
+		width: 96px;
 	}
 
 	.description-preview {
